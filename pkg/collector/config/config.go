@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"gopkg.in/yaml.v3"
+	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/server"
 
-	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/internel"
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/types"
 )
@@ -16,13 +16,13 @@ const (
 	DefaultHertzBeatCollectorName = "hertzbeat-collector"
 )
 
-type HookFunc func(c context.Context, server *internel.CollectorServer) error
+type HookFunc func(c context.Context, server *server.CollectorServer) error
 
 type Loader struct {
 	cfgPath string
 	logger  logger.Logger
 	cancel  context.CancelFunc
-	server  *internel.CollectorServer
+	server  *server.CollectorServer
 
 	hook HookFunc
 
@@ -30,7 +30,7 @@ type Loader struct {
 	// watcher *fsnotify.Watcher
 }
 
-func New(cfgPath string, server *internel.CollectorServer, f HookFunc) *Loader {
+func New(cfgPath string, server *server.CollectorServer, f HookFunc) *Loader {
 
 	return &Loader{
 		cfgPath: cfgPath,

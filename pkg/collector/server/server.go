@@ -1,4 +1,4 @@
-package internel
+package server
 
 import (
 	"context"
@@ -36,7 +36,7 @@ func NewCollectorServer(version string) *CollectorServer {
 
 	return &CollectorServer{
 		Version: version,
-		Logger:  logger.DefaultLogger(os.Stdout, types.LogLevelInfo),
+		Logger:  logger.DefaultLogger(os.Stdout, types.LogLevelDebug),
 	}
 }
 

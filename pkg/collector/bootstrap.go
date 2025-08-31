@@ -8,42 +8,42 @@ import (
 
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/banner"
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/config"
-	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/internel"
+	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/server"
 )
 
 func Bootstrap(confPath, version string) error {
 
 	// Init collector server
-	server := internel.NewCollectorServer(version)
-
-	server.Logger.Sugar().Debug("测试日志级别")
+	cs := server.NewCollectorServer(version)
 
 	// Load HertzBeat collector config
-	loader := config.New(confPath, server, nil)
+	loader := config.New(confPath, cs, nil)
 	cfg, err := loader.LoadConfig()
 	if err != nil {
-		server.Logger.Error(err, "load collector config failed")
+		cs.Logger.Error(err, "load collector config failed")
 		return err
 	}
 	err = loader.ValidateConfig(cfg)
 	if err != nil {
-		server.Logger.Error(err, "validate collector config failed")
+		cs.Logger.Error(err, "validate collector config failed")
 		return err
 	}
 
+	// todo: optimize log init eg. dynamic update log level
+
 	// render banner
-	err = banner.New(server).PrintBanner(cfg.Collector.Info.Name, cfg.Collector.Info.Port)
+	err = banner.New(cs).PrintBanner(cfg.Collector.Info.Name, cfg.Collector.Info.Port)
 	if err != nil {
-		server.Logger.Error(err, "print banner failed")
+		cs.Logger.Error(err, "print banner failed")
 		return err
 	}
 
 	// Load collector job
 
 	// check collector server
-	err = server.Validate()
+	err = cs.Validate()
 	if err != nil {
-		server.Logger.Error(err, "validate collector server failed")
+		cs.Logger.Error(err, "validate collector server failed")
 		return err
 	}
 
@@ -58,14 +58,14 @@ func Bootstrap(confPath, version string) error {
 		cancel()
 	}()
 
-	err = server.Start(ctx)
+	err = cs.Start(ctx)
 	if err != nil {
-		server.Logger.Error(err, "start collector server failed")
+		cs.Logger.Error(err, "start collector server failed")
 		return err
 	}
 
 	// shutdown collector server
-	_ = server.Close()
+	_ = cs.Close()
 
 	return nil
 }

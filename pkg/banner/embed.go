@@ -6,17 +6,17 @@ import (
 	"strconv"
 	"text/template"
 
-	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/internel"
+	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/server"
 )
 
 //go:embed banner.txt
 var EmbedLogo embed.FS
 
 type Banner struct {
-	server *internel.CollectorServer
+	server *server.CollectorServer
 }
 
-func New(server *internel.CollectorServer) *Banner {
+func New(server *server.CollectorServer) *Banner {
 	return &Banner{server: server}
 }
 
