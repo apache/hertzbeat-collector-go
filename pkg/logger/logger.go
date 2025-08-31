@@ -1,0 +1,120 @@
+package logger
+
+import (
+	"io"
+	"os"
+
+	"github.com/go-logr/logr"
+	"github.com/go-logr/zapr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
+	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/types"
+)
+
+type Logger struct {
+	logr.Logger
+	out           io.Writer
+	logging       *types.HertzBeatLogging
+	sugaredLogger *zap.SugaredLogger
+}
+
+func NewLogger(w io.Writer, logging *types.HertzBeatLogging) Logger {
+
+	logger := initZapLogger(w, logging, logging.Level[types.LogComponentHertzbeatDefault])
+
+	return Logger{
+		Logger:        zapr.NewLogger(logger),
+		out:           w,
+		logging:       logging,
+		sugaredLogger: logger.Sugar(),
+	}
+}
+
+func FileLogger(file, name string, level types.LogLevel) Logger {
+
+	writer, err := os.OpenFile(file, os.O_WRONLY, 0o666)
+	if err != nil {
+		panic(err)
+	}
+
+	logging := types.DefaultHertzbeatLogging()
+	logger := initZapLogger(writer, logging, level)
+
+	return Logger{
+		Logger:        zapr.NewLogger(logger).WithName(name),
+		logging:       logging,
+		out:           writer,
+		sugaredLogger: logger.Sugar(),
+	}
+}
+
+func DefaultLogger(out io.Writer, level types.LogLevel) Logger {
+
+	logging := types.DefaultHertzbeatLogging()
+	logger := initZapLogger(out, logging, level)
+
+	return Logger{
+		Logger:        zapr.NewLogger(logger),
+		out:           out,
+		logging:       logging,
+		sugaredLogger: logger.Sugar(),
+	}
+}
+
+// WithName returns a new Logger instance with the specified name element added
+// to the Logger's name.  Successive calls with WithName append additional
+// suffixes to the Logger's name.  It's strongly recommended that name segments
+// contain only letters, digits, and hyphens (see the package documentation for
+// more information).
+func (l Logger) WithName(name string) Logger {
+
+	logLevel := l.logging.Level[types.HertzbeatLogComponent(name)]
+	logger := initZapLogger(l.out, l.logging, logLevel)
+
+	return Logger{
+		Logger:        zapr.NewLogger(logger).WithName(name),
+		logging:       l.logging,
+		out:           l.out,
+		sugaredLogger: logger.Sugar().Named(name),
+	}
+}
+
+// WithValues returns a new Logger instance with additional key/value pairs.
+// See Info for documentation on how key/value pairs work.
+func (l Logger) WithValues(keysAndValues ...interface{}) Logger {
+
+	l.Logger = l.Logger.WithValues(keysAndValues...)
+	return l
+}
+
+// A Sugar wraps the base Logger functionality in a slower, but less
+// verbose, API. Any Logger can be converted to a SugaredLogger with its Sugar
+// method.
+//
+// Unlike the Logger, the SugaredLogger doesn't insist on structured logging.
+// For each log level, it exposes four methods:
+//
+//   - methods named after the log level for log.Print-style logging
+//   - methods ending in "w" for loosely-typed structured logging
+//   - methods ending in "f" for log.Printf-style logging
+//   - methods ending in "ln" for log.Println-style logging
+//
+// For example, the methods for InfoLevel are:
+//
+//	Info(...any)           Print-style logging
+//	Infow(...any)          Structured logging (read as "info with")
+//	Infof(string, ...any)  Printf-style logging
+//	Infoln(...any)         Println-style logging
+func (l Logger) Sugar() *zap.SugaredLogger {
+
+	return l.sugaredLogger
+}
+
+func initZapLogger(w io.Writer, logging *types.HertzBeatLogging, level types.LogLevel) *zap.Logger {
+
+	parseLevel, _ := zapcore.ParseLevel(string(logging.DefaultHertzBeatLoggingLevel(level)))
+	core := zapcore.NewCore(zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()), zapcore.AddSync(w), zap.NewAtomicLevelAt(parseLevel))
+
+	return zap.New(core, zap.AddCaller())
+}
