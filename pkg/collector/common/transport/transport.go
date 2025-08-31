@@ -6,6 +6,8 @@ import (
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/logger"
 )
 
+// RemotingService interface: copy java netty
+// todo ?
 type RemotingService interface {
 	Start() error
 	Shutdown() error
