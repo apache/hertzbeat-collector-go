@@ -24,6 +24,7 @@ type bannerVars struct {
 	CollectorName string
 	ServerPort    string
 	Pid           string
+	Version       string
 }
 
 func (b *Banner) PrintBanner(appName, port string) error {
@@ -43,6 +44,7 @@ func (b *Banner) PrintBanner(appName, port string) error {
 		CollectorName: appName,
 		ServerPort:    port,
 		Pid:           strconv.Itoa(os.Getpid()),
+		Version:       b.server.Version,
 	}
 
 	err = tmpl.Execute(os.Stdout, vars)

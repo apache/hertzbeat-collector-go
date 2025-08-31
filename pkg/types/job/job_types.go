@@ -1,4 +1,4 @@
-package types
+package job
 
 // hertzbeat Collect Job related types
 

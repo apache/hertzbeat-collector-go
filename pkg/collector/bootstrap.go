@@ -11,10 +11,10 @@ import (
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/internel"
 )
 
-func Bootstrap(confPath string) error {
+func Bootstrap(confPath, version string) error {
 
 	// Init collector server
-	server := internel.NewCollectorServer()
+	server := internel.NewCollectorServer(version)
 
 	server.Logger.Sugar().Debug("测试日志级别")
 

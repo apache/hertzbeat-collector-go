@@ -11,10 +11,9 @@ type CollectorSection struct {
 }
 
 type CollectorInfo struct {
-	Name    string `yaml:"name"`
-	Version string `yaml:"version"`
-	IP      string `yaml:"ip"`
-	Port    string `yaml:"port"`
+	Name string `yaml:"name"`
+	IP   string `yaml:"ip"`
+	Port string `yaml:"port"`
 }
 
 type CollectorLogConfig struct {

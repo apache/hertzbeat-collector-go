@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	DefaultHertzBeatCollectorName    = "hertzbeat-collector"
-	DefaultHertzBeatCollectorVersion = "0.0.1-DEV"
+	DefaultHertzBeatCollectorName = "hertzbeat-collector"
 )
 
 type HookFunc func(c context.Context, server *internel.CollectorServer) error
@@ -48,6 +47,11 @@ func (ld *Loader) LoadConfig() (*types.CollectorConfig, error) {
 	if ld.cfgPath == "" {
 		ld.logger.Info("collector-config-loader: path is empty")
 		return nil, errors.New("collector-config-loader: path is empty")
+	}
+
+	if _, err := os.Stat(ld.cfgPath); os.IsNotExist(err) {
+		ld.logger.Error(err, "collector-config-loader: file not exist", "path", ld.cfgPath)
+		return nil, err
 	}
 
 	file, err := os.Open(ld.cfgPath)
@@ -92,11 +96,6 @@ func (ld *Loader) ValidateConfig(cfg *types.CollectorConfig) error {
 	if cfg.Collector.Info.Name == "" {
 		ld.logger.Sugar().Debug("collector-config-loader: name is empty")
 		cfg.Collector.Info.Name = DefaultHertzBeatCollectorName
-	}
-
-	if cfg.Collector.Info.Version == "" {
-		ld.logger.Sugar().Debug("collector-config-loader version is empty, use default version")
-		cfg.Collector.Info.Version = DefaultHertzBeatCollectorVersion
 	}
 
 	return nil

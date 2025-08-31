@@ -27,6 +27,8 @@ lintconfig.gen.json
 
 *.orig
 
+bin/*
+
 LICENSES.txt
 
 **/var/run/secrets/

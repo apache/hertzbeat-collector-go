@@ -1,7 +1,6 @@
 collector:
   info:
-    Name: hertzbeat-collector-go
-    version: 0.0.1-DEV
+    name: hertzbeat-collector-go
     ip: 127.0.0.1
     port: 8080
 

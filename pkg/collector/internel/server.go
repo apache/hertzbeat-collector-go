@@ -8,6 +8,10 @@ import (
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/types"
 )
 
+const (
+	DefaultHertzBeatCollectorVersion = "0.0.1-DEV"
+)
+
 type Run interface {
 	Start(ctx context.Context) error
 	Close() error
@@ -15,13 +19,19 @@ type Run interface {
 
 // CollectorServer HertzBeat Collector Server
 type CollectorServer struct {
-	Logger logger.Logger
+	Version string
+	Logger  logger.Logger
 }
 
-func NewCollectorServer() *CollectorServer {
+func NewCollectorServer(version string) *CollectorServer {
+
+	if version == "" {
+		version = DefaultHertzBeatCollectorVersion
+	}
 
 	return &CollectorServer{
-		Logger: logger.DefaultLogger(os.Stdout, types.LogLevelInfo),
+		Version: version,
+		Logger:  logger.DefaultLogger(os.Stdout, types.LogLevelInfo),
 	}
 }
 
@@ -40,7 +50,7 @@ func (s *CollectorServer) Validate() error {
 	return nil
 }
 
-// Shutdown the server hook
+// Close Shutdown the server hook
 func (s *CollectorServer) Close() error {
 
 	s.Logger.Info("collector server shutting down... bye!")
