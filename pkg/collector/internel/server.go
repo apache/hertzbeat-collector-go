@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/common/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/common/transport"
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/types"
 )
@@ -21,6 +23,9 @@ type Run interface {
 type CollectorServer struct {
 	Version string
 	Logger  logger.Logger
+
+	job       *job.Server
+	transport *transport.Server
 }
 
 func NewCollectorServer(version string) *CollectorServer {
@@ -38,6 +43,12 @@ func NewCollectorServer(version string) *CollectorServer {
 func (s *CollectorServer) Start(ctx context.Context) error {
 
 	s.Logger.Info("hi, starting collector server...")
+
+	// start job server
+	s.job = job.NewServer(s.Logger.WithName("job"))
+
+	// init and start transport server
+	s.transport = transport.NewServer(s.Logger.WithName("transport"))
 
 	// Wait until done
 	<-ctx.Done()

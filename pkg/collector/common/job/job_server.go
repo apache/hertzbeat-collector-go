@@ -1,22 +1,10 @@
-package transport
+package job
 
 import (
 	"context"
 
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/logger"
 )
-
-type RemotingService interface {
-	Start() error
-	Shutdown() error
-	isStart() error
-}
-
-type RemotingClient interface {
-	RemotingService
-
-	// todo add
-}
 
 type Server struct {
 	logger logger.Logger
