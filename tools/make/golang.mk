@@ -39,12 +39,8 @@ build: ## Golang build
 	@version=$$(cat VERSION); \
 	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/ ./...
 
-.PHONY:
-test: run all unit test
-	go test -v ./...
-
 .PHONY: init
-init: ## install base tools
+init: ## install base. For proto compile.
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
@@ -60,3 +56,16 @@ api: ## compile api proto files
  	       --go-grpc_out=paths=source_relative:./api \
 	       --openapi_out=fq_schema_naming=true,default_response=false:. \
 	       $(API_PROTO_FILES)
+
+.PHONY: go-lint
+go-lint: ## run golang lint
+	golangci-lint run --config ./tools/linter/golangci-lint/.golangci.yml
+
+.PHONY: test
+test: ## run golang test
+	go test -v ./...
+
+.PHONY: golang-all
+golang-all: ## run fmt lint vet build api test
+golang-all: fmt lint vet build api test
+
