@@ -68,4 +68,3 @@ test: ## run golang test
 .PHONY: golang-all
 golang-all: ## run fmt lint vet build api test
 golang-all: fmt lint vet build api test
-
