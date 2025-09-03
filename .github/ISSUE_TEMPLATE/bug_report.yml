@@ -16,7 +16,7 @@
 # under the License.
 
 name: 🐛 Bug Report
-description: Problems and issues with code of Spring AI Alibaba 🤔.
+description: Problems and issues with code of Hertzbeat Collector Go 🤔.
 title: "[BUG] "
 labels: ["needs-triage", "kind/bug"]
 body:
@@ -55,8 +55,8 @@ body:
       label: Environment
       description: |
         examples:
-          - **Spring AI Alibaba(s)**: 1.0.0.2?
-      value: "Spring AI Alibaba version(s):"
+          - **Hertzbeat Collector Go(s)**: 1.0.0.2?
+      value: "Hertzbeat Collector Go version(s):"
       render: markdown
     validations:
       required: false
