@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-name: 🗝️ Secrets Check
+name: 🛠️ Build and Test
 on:
   push:
     branches:
@@ -29,7 +29,4 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: ./tools/github-actions/setup-deps
-      - run: make fmt
-      - run: make vet
-      - run: make test
-      - run: make build
+      - run: make golang-all
