@@ -30,9 +30,7 @@ tools: ## Install ci tools
 	npm --version
 
 	@echo "Setting up Python venv"
-	python -m venv tools/venv
-	. tools/venv/bin/activate && \
-		pip install --upgrade pip
+	pip install --upgrade pip
 
 	@echo "Installing markdownlint-cli"
 	npm install markdownlint-cli --global
@@ -42,12 +40,10 @@ tools: ## Install ci tools
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
 	@echo "Installing codespell"
-	. tools/venv/bin/activate && \
-		pip install codespell
+	pip install codespell
 
 	@echo "Installing yamllint"
-	. tools/venv/bin/activate && \
-		pip install yamllint==1.35.1
+	pip install yamllint==1.35.1
 
 	@echo "Installing yamlfmt"
 	go install github.com/google/yamlfmt/cmd/yamlfmt@latest

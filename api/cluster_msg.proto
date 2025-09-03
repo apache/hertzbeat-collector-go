@@ -20,8 +20,7 @@ package clustermsg;
 
 option go_package = "hertzbeat.apache.org/hertzbeat-collector-go/api";
 
-message Message
-{
+message Message {
     // collector identity
     string identity = 1;
     // message direction
@@ -32,8 +31,7 @@ message Message
     bytes msg = 4;
 }
 
-enum MessageType
-{
+enum MessageType {
     // heartbeat message
     HEARTBEAT = 0;
     // collector go online to master message
