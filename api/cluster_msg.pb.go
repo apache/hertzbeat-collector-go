@@ -18,9 +18,9 @@
 // versions:
 // 	protoc-gen-go v1.36.8
 // 	protoc        v5.29.3
-// source: api/cluster_msg.proto
+// source: cluster_msg.proto
 
-package api
+package cluster_msg
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -101,11 +101,11 @@ func (x MessageType) String() string {
 }
 
 func (MessageType) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_cluster_msg_proto_enumTypes[0].Descriptor()
+	return file_cluster_msg_proto_enumTypes[0].Descriptor()
 }
 
 func (MessageType) Type() protoreflect.EnumType {
-	return &file_api_cluster_msg_proto_enumTypes[0]
+	return &file_cluster_msg_proto_enumTypes[0]
 }
 
 func (x MessageType) Number() protoreflect.EnumNumber {
@@ -114,7 +114,7 @@ func (x MessageType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MessageType.Descriptor instead.
 func (MessageType) EnumDescriptor() ([]byte, []int) {
-	return file_api_cluster_msg_proto_rawDescGZIP(), []int{0}
+	return file_cluster_msg_proto_rawDescGZIP(), []int{0}
 }
 
 type Direction int32
@@ -149,11 +149,11 @@ func (x Direction) String() string {
 }
 
 func (Direction) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_cluster_msg_proto_enumTypes[1].Descriptor()
+	return file_cluster_msg_proto_enumTypes[1].Descriptor()
 }
 
 func (Direction) Type() protoreflect.EnumType {
-	return &file_api_cluster_msg_proto_enumTypes[1]
+	return &file_cluster_msg_proto_enumTypes[1]
 }
 
 func (x Direction) Number() protoreflect.EnumNumber {
@@ -162,7 +162,7 @@ func (x Direction) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Direction.Descriptor instead.
 func (Direction) EnumDescriptor() ([]byte, []int) {
-	return file_api_cluster_msg_proto_rawDescGZIP(), []int{1}
+	return file_cluster_msg_proto_rawDescGZIP(), []int{1}
 }
 
 type Message struct {
@@ -170,9 +170,9 @@ type Message struct {
 	// collector identity
 	Identity string `protobuf:"bytes,1,opt,name=identity,proto3" json:"identity,omitempty"`
 	// message direction
-	Direction Direction `protobuf:"varint,2,opt,name=direction,proto3,enum=clustermsg.Direction" json:"direction,omitempty"`
+	Direction Direction `protobuf:"varint,2,opt,name=direction,proto3,enum=hertzbeat.apache.org.api.msg.Direction" json:"direction,omitempty"`
 	// message type
-	Type MessageType `protobuf:"varint,3,opt,name=type,proto3,enum=clustermsg.MessageType" json:"type,omitempty"`
+	Type MessageType `protobuf:"varint,3,opt,name=type,proto3,enum=hertzbeat.apache.org.api.msg.MessageType" json:"type,omitempty"`
 	// message content
 	Msg           []byte `protobuf:"bytes,4,opt,name=msg,proto3" json:"msg,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -181,7 +181,7 @@ type Message struct {
 
 func (x *Message) Reset() {
 	*x = Message{}
-	mi := &file_api_cluster_msg_proto_msgTypes[0]
+	mi := &file_cluster_msg_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -193,7 +193,7 @@ func (x *Message) String() string {
 func (*Message) ProtoMessage() {}
 
 func (x *Message) ProtoReflect() protoreflect.Message {
-	mi := &file_api_cluster_msg_proto_msgTypes[0]
+	mi := &file_cluster_msg_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -206,7 +206,7 @@ func (x *Message) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Message.ProtoReflect.Descriptor instead.
 func (*Message) Descriptor() ([]byte, []int) {
-	return file_api_cluster_msg_proto_rawDescGZIP(), []int{0}
+	return file_cluster_msg_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Message) GetIdentity() string {
@@ -237,16 +237,15 @@ func (x *Message) GetMsg() []byte {
 	return nil
 }
 
-var File_api_cluster_msg_proto protoreflect.FileDescriptor
+var File_cluster_msg_proto protoreflect.FileDescriptor
 
-const file_api_cluster_msg_proto_rawDesc = "" +
+const file_cluster_msg_proto_rawDesc = "" +
 	"\n" +
-	"\x15api/cluster_msg.proto\x12\n" +
-	"clustermsg\"\x99\x01\n" +
+	"\x11cluster_msg.proto\x12\x1chertzbeat.apache.org.api.msg\"\xbd\x01\n" +
 	"\aMessage\x12\x1a\n" +
-	"\bidentity\x18\x01 \x01(\tR\bidentity\x123\n" +
-	"\tdirection\x18\x02 \x01(\x0e2\x15.clustermsg.DirectionR\tdirection\x12+\n" +
-	"\x04type\x18\x03 \x01(\x0e2\x17.clustermsg.MessageTypeR\x04type\x12\x10\n" +
+	"\bidentity\x18\x01 \x01(\tR\bidentity\x12E\n" +
+	"\tdirection\x18\x02 \x01(\x0e2'.hertzbeat.apache.org.api.msg.DirectionR\tdirection\x12=\n" +
+	"\x04type\x18\x03 \x01(\x0e2).hertzbeat.apache.org.api.msg.MessageTypeR\x04type\x12\x10\n" +
 	"\x03msg\x18\x04 \x01(\fR\x03msg*\xf3\x01\n" +
 	"\vMessageType\x12\r\n" +
 	"\tHEARTBEAT\x10\x00\x12\r\n" +
@@ -262,30 +261,31 @@ const file_api_cluster_msg_proto_rawDesc = "" +
 	"\x1cRESPONSE_CYCLIC_TASK_SD_DATA\x10\t*&\n" +
 	"\tDirection\x12\v\n" +
 	"\aREQUEST\x10\x00\x12\f\n" +
-	"\bRESPONSE\x10\x01B1Z/hertzbeat.apache.org/hertzbeat-collector-go/apib\x06proto3"
+	"\bRESPONSE\x10\x01BP\n" +
+	"$org.apache.hertzbeat.api.cluster_msgZ(hertzbeat.apache.org/api/msg;cluster_msgb\x06proto3"
 
 var (
-	file_api_cluster_msg_proto_rawDescOnce sync.Once
-	file_api_cluster_msg_proto_rawDescData []byte
+	file_cluster_msg_proto_rawDescOnce sync.Once
+	file_cluster_msg_proto_rawDescData []byte
 )
 
-func file_api_cluster_msg_proto_rawDescGZIP() []byte {
-	file_api_cluster_msg_proto_rawDescOnce.Do(func() {
-		file_api_cluster_msg_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_cluster_msg_proto_rawDesc), len(file_api_cluster_msg_proto_rawDesc)))
+func file_cluster_msg_proto_rawDescGZIP() []byte {
+	file_cluster_msg_proto_rawDescOnce.Do(func() {
+		file_cluster_msg_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_cluster_msg_proto_rawDesc), len(file_cluster_msg_proto_rawDesc)))
 	})
-	return file_api_cluster_msg_proto_rawDescData
+	return file_cluster_msg_proto_rawDescData
 }
 
-var file_api_cluster_msg_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_api_cluster_msg_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_api_cluster_msg_proto_goTypes = []any{
-	(MessageType)(0), // 0: clustermsg.MessageType
-	(Direction)(0),   // 1: clustermsg.Direction
-	(*Message)(nil),  // 2: clustermsg.Message
+var file_cluster_msg_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_cluster_msg_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_cluster_msg_proto_goTypes = []any{
+	(MessageType)(0), // 0: hertzbeat.apache.org.api.msg.MessageType
+	(Direction)(0),   // 1: hertzbeat.apache.org.api.msg.Direction
+	(*Message)(nil),  // 2: hertzbeat.apache.org.api.msg.Message
 }
-var file_api_cluster_msg_proto_depIdxs = []int32{
-	1, // 0: clustermsg.Message.direction:type_name -> clustermsg.Direction
-	0, // 1: clustermsg.Message.type:type_name -> clustermsg.MessageType
+var file_cluster_msg_proto_depIdxs = []int32{
+	1, // 0: hertzbeat.apache.org.api.msg.Message.direction:type_name -> hertzbeat.apache.org.api.msg.Direction
+	0, // 1: hertzbeat.apache.org.api.msg.Message.type:type_name -> hertzbeat.apache.org.api.msg.MessageType
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -293,27 +293,27 @@ var file_api_cluster_msg_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_api_cluster_msg_proto_init() }
-func file_api_cluster_msg_proto_init() {
-	if File_api_cluster_msg_proto != nil {
+func init() { file_cluster_msg_proto_init() }
+func file_cluster_msg_proto_init() {
+	if File_cluster_msg_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_cluster_msg_proto_rawDesc), len(file_api_cluster_msg_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cluster_msg_proto_rawDesc), len(file_cluster_msg_proto_rawDesc)),
 			NumEnums:      2,
 			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_api_cluster_msg_proto_goTypes,
-		DependencyIndexes: file_api_cluster_msg_proto_depIdxs,
-		EnumInfos:         file_api_cluster_msg_proto_enumTypes,
-		MessageInfos:      file_api_cluster_msg_proto_msgTypes,
+		GoTypes:           file_cluster_msg_proto_goTypes,
+		DependencyIndexes: file_cluster_msg_proto_depIdxs,
+		EnumInfos:         file_cluster_msg_proto_enumTypes,
+		MessageInfos:      file_cluster_msg_proto_msgTypes,
 	}.Build()
-	File_api_cluster_msg_proto = out.File
-	file_api_cluster_msg_proto_goTypes = nil
-	file_api_cluster_msg_proto_depIdxs = nil
+	File_cluster_msg_proto = out.File
+	file_cluster_msg_proto_goTypes = nil
+	file_cluster_msg_proto_depIdxs = nil
 }

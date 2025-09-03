@@ -20,14 +20,17 @@ package config
 import (
 	"os"
 	"testing"
+
+	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/server"
 )
 
 func TestLoadConfig(t *testing.T) {
 
 	content := `{
         "collector": {
-            "version": "1.0.0",
-            "ip": "127.0.0.1"
+            "info": {
+            	"ip": "127.0.0.1"
+			},
         },
         "dispatcher": {}
     }`
@@ -49,14 +52,14 @@ func TestLoadConfig(t *testing.T) {
 		return
 	}
 
-	cfg, err := LoadConfig(dumpfile.Name())
+	collectorServer := server.NewCollectorServer("0.0.1-DEV")
+	loader := New(dumpfile.Name(), collectorServer, nil)
+
+	cfg, err := loader.LoadConfig()
 	if err != nil {
 		t.Fatalf("LoadConfig failed: %v", err)
 	}
-	if cfg.Collector.Version != "1.0.0" {
-		t.Errorf("expected version '1.0.0', got '%s'", cfg.Collector.Version)
-	}
-	if cfg.Collector.IP != "127.0.0.1" {
-		t.Errorf("expected ip '127.0.0.1', got '%s'", cfg.Collector.IP)
+	if cfg.Collector.Info.IP != "127.0.0.1" {
+		t.Errorf("expected ip '127.0.0.1', got '%s'", cfg.Collector.Info.IP)
 	}
 }

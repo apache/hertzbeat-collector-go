@@ -16,9 +16,11 @@
  */
 
 syntax = "proto3";
-package clustermsg;
 
-option go_package = "hertzbeat.apache.org/hertzbeat-collector-go/api";
+package hertzbeat.apache.org.api.msg;
+
+option go_package = "hertzbeat.apache.org/api/msg;cluster_msg";
+option java_package = "org.apache.hertzbeat.api.cluster_msg";
 
 message Message {
     // collector identity

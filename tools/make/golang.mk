@@ -55,7 +55,7 @@ api: ## compile api proto files
 
 .PHONY: go-lint
 go-lint: ## run golang lint
-	golangci-lint run --config ./tools/linter/golangci-lint/.golangci.yml
+	golangci-lint run --config tools/linter/golang-ci/.golangci.yml
 
 .PHONY: test
 test: ## run golang test
