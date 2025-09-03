@@ -22,10 +22,6 @@ fmt: ## Golang fmt
 	go fmt ./...
 
 .PHONY:
-lint: ## Golang lint check
-	golangci-lint run
-
-.PHONY:
 vet: ## Golang vet
 	go vet ./...
 
