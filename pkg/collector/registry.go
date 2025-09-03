@@ -18,23 +18,40 @@
 package collector
 
 import (
-	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/basic/database"
+	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/registry"
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/logger"
+
+	// 导入所有采集器以触发自动注册
+	_ "hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/basic/database"
 )
 
-// RegisterBuiltinCollectors registers all built-in collectors with the service
-// This function should be called during application initialization to avoid circular dependencies
+// RegisterBuiltinCollectors 自动注册所有内置采集器
+// 使用新的自动注册机制，无需手动添加每个采集器
 func RegisterBuiltinCollectors(service *CollectService, logger logger.Logger) {
-	// Register JDBC collector
-	jdbcCollector := database.NewJDBCCollector(logger)
-	service.RegisterCollector(jdbcCollector.SupportProtocol(), jdbcCollector)
+	// 从注册中心创建所有启用的采集器
+	collectors, err := registry.GetGlobalCenter().CreateCollectors(logger)
+	if err != nil {
+		logger.Error(err, "创建采集器失败")
+		return
+	}
 
-	// TODO: Register other built-in collectors here
-	// httpCollector := http.NewHTTPCollector(logger)
-	// service.RegisterCollector(httpCollector.SupportProtocol(), httpCollector)
+	// 注册到CollectService
+	for protocol, collector := range collectors {
+		service.RegisterCollector(protocol, collector)
+		logger.Info("采集器注册到服务", "protocol", protocol)
+	}
+}
 
-	// sshCollector := ssh.NewSSHCollector(logger)
-	// service.RegisterCollector(sshCollector.SupportProtocol(), sshCollector)
+// RegisterBuiltinCollectorsLegacy 传统的手动注册方式 (已废弃)
+// 保留用于兼容性，建议使用RegisterBuiltinCollectors
+//
+// Deprecated: 使用RegisterBuiltinCollectors替代，它会自动注册所有采集器
+func RegisterBuiltinCollectorsLegacy(service *CollectService, logger logger.Logger) {
+	logger.Info("⚠️  使用已废弃的手动注册方式，建议切换到自动注册")
+
+	// 这里可以保留原来的手动注册逻辑用于兼容
+	// jdbcCollector := database.NewJDBCCollector(logger)
+	// service.RegisterCollector(jdbcCollector.SupportProtocol(), jdbcCollector)
 }
 
 // NewCollectServiceWithBuiltins creates a new collect service and registers all built-in collectors

@@ -32,3 +32,20 @@ type Job struct {
 	PriorMetrics     []Metrics            `json:"-"`
 	ResponseDataTemp []MetricsData        `json:"-"`
 }
+
+// GetNextCollectMetrics returns the metrics that should be collected next
+// This is a simplified version - in the full implementation this would handle
+// metric priorities, dependencies, and collection levels
+func (j *Job) GetNextCollectMetrics() []*Metrics {
+	result := make([]*Metrics, 0, len(j.Metrics))
+	for i := range j.Metrics {
+		result = append(result, &j.Metrics[i])
+	}
+	return result
+}
+
+// ConstructPriorMetrics prepares prior metrics for collection dependencies
+func (j *Job) ConstructPriorMetrics() {
+	j.PriorMetrics = make([]Metrics, len(j.Metrics))
+	copy(j.PriorMetrics, j.Metrics)
+}

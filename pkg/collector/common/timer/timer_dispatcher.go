@@ -42,6 +42,12 @@ type TimerDispatcher struct {
 	tempTasks      sync.Map // map[int64]*jobtypes.Timeout
 	eventListeners sync.Map // map[int64]CollectResponseEventListener
 
+	// Timeout monitoring
+	timeoutMonitor       sync.Map // map[string]*MetricsTimeoutInfo
+	timeoutCheckInterval time.Duration
+	timeoutCheckTicker   *time.Ticker
+	stopTimeoutMonitor   chan struct{}
+
 	// State management
 	started atomic.Bool
 
@@ -53,15 +59,27 @@ type TimerDispatcher struct {
 	logger            logger.Logger
 }
 
+// MetricsTimeoutInfo tracks timeout information for metrics collection tasks
+type MetricsTimeoutInfo struct {
+	StartTime   time.Time
+	Metrics     *jobtypes.Metrics
+	Timeout     *jobtypes.Timeout
+	MaxDuration time.Duration
+	RetryCount  int
+	MaxRetries  int
+}
+
 // NewTimerDispatcher creates a new timer dispatcher
 func NewTimerDispatcher(logger logger.Logger) *TimerDispatcher {
 	// Create worker pool with default configuration
 	workerConfig := worker.DefaultWorkerPoolConfig()
 
 	td := &TimerDispatcher{
-		wheelTimer: NewTimerWheel(logger.WithName("timer-wheel")),
-		workerPool: worker.NewPriorityWorkerPool(workerConfig, logger),
-		logger:     logger.WithName("timer-dispatcher"),
+		wheelTimer:           NewTimerWheel(logger.WithName("timer-wheel")),
+		workerPool:           worker.NewPriorityWorkerPool(workerConfig, logger),
+		timeoutCheckInterval: 10 * time.Second, // Check for timeouts every 10 seconds
+		stopTimeoutMonitor:   make(chan struct{}),
+		logger:               logger.WithName("timer-dispatcher"),
 	}
 
 	td.started.Store(true)
@@ -99,6 +117,9 @@ func (td *TimerDispatcher) Start() error {
 		return fmt.Errorf("failed to start timer wheel: %w", err)
 	}
 
+	// Start timeout monitoring
+	td.startTimeoutMonitoring()
+
 	td.logger.Info("timer dispatcher started successfully")
 	return nil
 }
@@ -109,6 +130,9 @@ func (td *TimerDispatcher) Stop() error {
 
 	// Mark as offline
 	td.GoOffline()
+
+	// Stop timeout monitoring
+	td.stopTimeoutMonitoring()
 
 	// Stop the timer wheel first
 	if err := td.wheelTimer.Stop(); err != nil {
@@ -430,4 +454,177 @@ type TimerDispatcherStats struct {
 func (td *TimerDispatcher) SetMetricsTaskDispatcher(dispatcher interface{}) {
 	// This method is for interface compatibility with communication layer
 	// The TimerDispatcher itself implements MetricsTaskDispatcher
+}
+
+// startTimeoutMonitoring starts the timeout monitoring goroutine
+func (td *TimerDispatcher) startTimeoutMonitoring() {
+	td.timeoutCheckTicker = time.NewTicker(td.timeoutCheckInterval)
+
+	go func() {
+		defer td.timeoutCheckTicker.Stop()
+
+		for {
+			select {
+			case <-td.timeoutCheckTicker.C:
+				td.checkTimeouts()
+			case <-td.stopTimeoutMonitor:
+				td.logger.Info("timeout monitoring stopped")
+				return
+			}
+		}
+	}()
+
+	td.logger.Info("timeout monitoring started", "interval", td.timeoutCheckInterval)
+}
+
+// stopTimeoutMonitoring stops the timeout monitoring
+func (td *TimerDispatcher) stopTimeoutMonitoring() {
+	if td.timeoutCheckTicker != nil {
+		close(td.stopTimeoutMonitor)
+		td.timeoutCheckTicker.Stop()
+	}
+}
+
+// checkTimeouts checks for timed out metrics collection tasks
+func (td *TimerDispatcher) checkTimeouts() {
+	now := time.Now()
+	var timeoutKeys []string
+
+	td.timeoutMonitor.Range(func(key, value interface{}) bool {
+		timeoutKey := key.(string)
+		timeoutInfo := value.(*MetricsTimeoutInfo)
+
+		// Check if task has timed out
+		if now.Sub(timeoutInfo.StartTime) > timeoutInfo.MaxDuration {
+			timeoutKeys = append(timeoutKeys, timeoutKey)
+
+			td.logger.Info("metrics collection task timed out",
+				"key", timeoutKey,
+				"metrics", timeoutInfo.Metrics.Name,
+				"duration", now.Sub(timeoutInfo.StartTime),
+				"maxDuration", timeoutInfo.MaxDuration,
+				"retryCount", timeoutInfo.RetryCount)
+		}
+
+		return true
+	})
+
+	// Handle timed out tasks
+	for _, timeoutKey := range timeoutKeys {
+		td.handleTimeout(timeoutKey)
+	}
+}
+
+// handleTimeout handles a timed out metrics collection task
+func (td *TimerDispatcher) handleTimeout(timeoutKey string) {
+	value, exists := td.timeoutMonitor.Load(timeoutKey)
+	if !exists {
+		return
+	}
+
+	timeoutInfo := value.(*MetricsTimeoutInfo)
+
+	// Remove from timeout monitor
+	td.timeoutMonitor.Delete(timeoutKey)
+
+	// Check if we should retry
+	if timeoutInfo.RetryCount < timeoutInfo.MaxRetries {
+		td.logger.Info("retrying timed out metrics collection task",
+			"key", timeoutKey,
+			"metrics", timeoutInfo.Metrics.Name,
+			"retryCount", timeoutInfo.RetryCount+1,
+			"maxRetries", timeoutInfo.MaxRetries)
+
+		// Retry the task
+		td.retryMetricsCollection(timeoutInfo)
+	} else {
+		td.logger.Info("metrics collection task exceeded max retries",
+			"key", timeoutKey,
+			"metrics", timeoutInfo.Metrics.Name,
+			"retryCount", timeoutInfo.RetryCount,
+			"maxRetries", timeoutInfo.MaxRetries)
+
+		// TODO: Notify failure to appropriate handlers
+		// This could involve sending a failure response or triggering alerts
+	}
+}
+
+// retryMetricsCollection retries a failed metrics collection task
+func (td *TimerDispatcher) retryMetricsCollection(timeoutInfo *MetricsTimeoutInfo) {
+	// Create new timeout info with incremented retry count
+	newTimeoutInfo := &MetricsTimeoutInfo{
+		StartTime:   time.Now(),
+		Metrics:     timeoutInfo.Metrics,
+		Timeout:     timeoutInfo.Timeout,
+		MaxDuration: timeoutInfo.MaxDuration,
+		RetryCount:  timeoutInfo.RetryCount + 1,
+		MaxRetries:  timeoutInfo.MaxRetries,
+	}
+
+	// Generate retry key
+	retryKey := fmt.Sprintf("%s-retry-%d",
+		td.generateTimeoutKey(timeoutInfo.Metrics, timeoutInfo.Timeout),
+		newTimeoutInfo.RetryCount)
+
+	// Add to timeout monitor
+	td.timeoutMonitor.Store(retryKey, newTimeoutInfo)
+
+	// Dispatch the retry task with exponential backoff
+	retryDelay := time.Duration(timeoutInfo.RetryCount) * 5 * time.Second
+	time.AfterFunc(retryDelay, func() {
+		if td.metricsDispatcher != nil {
+			if err := td.metricsDispatcher.DispatchMetricsTask(timeoutInfo.Timeout); err != nil {
+				td.logger.Error(err, "failed to retry metrics collection task",
+					"key", retryKey,
+					"metrics", timeoutInfo.Metrics.Name)
+				// Remove from monitor if retry dispatch fails
+				td.timeoutMonitor.Delete(retryKey)
+			}
+		}
+	})
+}
+
+// AddMetricsTimeout adds a metrics collection task to timeout monitoring
+func (td *TimerDispatcher) AddMetricsTimeout(metrics *jobtypes.Metrics, timeout *jobtypes.Timeout) {
+	// Calculate max duration based on metrics timeout or default
+	maxDuration := 120 * time.Second // default 2 minutes
+	if metrics.Timeout != "" {
+		if duration, err := time.ParseDuration(metrics.Timeout); err == nil {
+			maxDuration = duration
+		}
+	}
+
+	timeoutInfo := &MetricsTimeoutInfo{
+		StartTime:   time.Now(),
+		Metrics:     metrics,
+		Timeout:     timeout,
+		MaxDuration: maxDuration,
+		RetryCount:  0,
+		MaxRetries:  3, // default max retries
+	}
+
+	key := td.generateTimeoutKey(metrics, timeout)
+	td.timeoutMonitor.Store(key, timeoutInfo)
+
+	td.logger.Info("added metrics timeout monitoring",
+		"key", key,
+		"metrics", metrics.Name,
+		"maxDuration", maxDuration,
+		"maxRetries", timeoutInfo.MaxRetries)
+}
+
+// RemoveMetricsTimeout removes a metrics collection task from timeout monitoring
+func (td *TimerDispatcher) RemoveMetricsTimeout(metrics *jobtypes.Metrics, timeout *jobtypes.Timeout) {
+	key := td.generateTimeoutKey(metrics, timeout)
+	td.timeoutMonitor.Delete(key)
+
+	td.logger.Info("removed metrics timeout monitoring",
+		"key", key,
+		"metrics", metrics.Name)
+}
+
+// generateTimeoutKey generates a unique key for timeout monitoring
+func (td *TimerDispatcher) generateTimeoutKey(metrics *jobtypes.Metrics, timeout *jobtypes.Timeout) string {
+	// Use a combination of metrics name and timestamp to ensure uniqueness
+	return fmt.Sprintf("%s-%d-%s", metrics.Name, time.Now().UnixNano(), metrics.Protocol)
 }

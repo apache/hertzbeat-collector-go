@@ -5,19 +5,23 @@ import (
 	"os"
 	"strconv"
 	"text/template"
-
-	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/server"
 )
 
 //go:embed banner.txt
 var EmbedLogo embed.FS
 
-type Banner struct {
-	server *server.CollectorServer
+// LoggerInterface defines the interface for logging
+type LoggerInterface interface {
+	Error(err error, msg string)
+	Info(msg string, keysAndValues ...interface{})
 }
 
-func New(server *server.CollectorServer) *Banner {
-	return &Banner{server: server}
+type Banner struct {
+	logger LoggerInterface
+}
+
+func New(logger LoggerInterface) *Banner {
+	return &Banner{logger: logger}
 }
 
 type bannerVars struct {
@@ -28,15 +32,19 @@ type bannerVars struct {
 }
 
 func (b *Banner) PrintBanner(appName, port string) error {
+	return b.PrintBannerWithVersion(appName, port, "unknown")
+}
+
+func (b *Banner) PrintBannerWithVersion(appName, port, version string) error {
 	data, err := EmbedLogo.ReadFile("banner.txt")
 	if err != nil {
-		b.server.Logger.Error(err, "read banner file failed")
+		b.logger.Error(err, "read banner file failed")
 		return err
 	}
 
 	tmpl, err := template.New("banner").Parse(string(data))
 	if err != nil {
-		b.server.Logger.Error(err, "parse banner template failed")
+		b.logger.Error(err, "parse banner template failed")
 		return err
 	}
 
@@ -44,7 +52,7 @@ func (b *Banner) PrintBanner(appName, port string) error {
 		CollectorName: appName,
 		ServerPort:    port,
 		Pid:           strconv.Itoa(os.Getpid()),
-		Version:       b.server.Version,
+		Version:       version,
 	}
 
 	err = tmpl.Execute(os.Stdout, vars)

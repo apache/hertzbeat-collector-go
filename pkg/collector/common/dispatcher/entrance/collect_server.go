@@ -5,9 +5,11 @@ import (
 	"sync"
 	"time"
 
+	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector"
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/common/timer"
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/worker"
 	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/logger"
+	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/pkg/types/job"
 )
 
 // CollectServer manages the complete collection infrastructure including
@@ -20,6 +22,7 @@ type CollectServer struct {
 	timerDispatcher   *timer.TimerDispatcher
 	workerPool        *worker.WorkerPool
 	collectJobService *CollectJobService
+	collectService    *collector.CollectService
 	networkClient     *NetworkClient
 
 	// Component states
@@ -138,6 +141,11 @@ func (cs *CollectServer) initializeComponents() error {
 	// Initialize timer dispatcher
 	cs.timerDispatcher = timer.NewTimerDispatcher(cs.logger)
 
+	// Initialize collect service with enhanced scheduling capabilities
+	cs.collectService = collector.NewCollectService(cs.logger)
+	cs.collectService.SetTimerDispatcher(cs.timerDispatcher)
+	collector.RegisterBuiltinCollectors(cs.collectService, cs.logger)
+
 	// Initialize collect job service
 	cs.collectJobService = NewCollectJobService(
 		cs.timerDispatcher,
@@ -163,14 +171,18 @@ func (cs *CollectServer) wireComponents() {
 	// Set network client in collect job service
 	cs.collectJobService.SetNetworkClient(cs.networkClient)
 
+	// Wire collect service with timer dispatcher for enhanced scheduling
+	cs.timerDispatcher.SetCollectService(cs.collectService)
+	cs.timerDispatcher.SetCollectDataDispatcher(cs.collectJobService)
+
 	// Register message processors
 	cs.registerMessageProcessors()
 
-	// Set collect job service as the metrics task dispatcher
-	cs.timerDispatcher.SetMetricsTaskDispatcher(cs.collectJobService)
+	// TimerDispatcher implements MetricsTaskDispatcher itself, so we use it as its own dispatcher
+	cs.timerDispatcher.SetMetricsDispatcher(cs.timerDispatcher)
 
-	// Set collect job service as the collect data dispatcher
-	// cs.timerDispatcher.SetCollectDataDispatcher(cs.collectJobService) // TODO: Fix interface compatibility
+	// TODO: Set collect service as the primary metrics task dispatcher (enhanced version)
+	// cs.timerDispatcher.SetMetricsDispatcher(cs.collectService)
 }
 
 // registerMessageProcessors registers all message processors with the network client.
@@ -285,6 +297,37 @@ func (cs *CollectServer) IsStarted() bool {
 	cs.startMutex.Lock()
 	defer cs.startMutex.Unlock()
 	return cs.isStarted
+}
+
+// ReceiveJob simulates receiving a job from the manager and adds it to the dispatcher.
+// This method is used for testing and simulation purposes when network communication is not available.
+func (cs *CollectServer) ReceiveJob(job *jobtypes.Job, eventListener timer.CollectResponseEventListener) error {
+	if !cs.isStarted {
+		return fmt.Errorf("collect server is not started")
+	}
+
+	cs.logger.Info("received job from manager (simulated)",
+		"jobId", job.ID,
+		"monitorId", job.MonitorID,
+		"app", job.App,
+		"category", job.Category,
+		"isCyclic", job.IsCyclic,
+		"interval", job.DefaultInterval)
+
+	// Add the job to the timer dispatcher for scheduling
+	if err := cs.timerDispatcher.AddJob(job, eventListener); err != nil {
+		cs.logger.Error(err, "failed to add received job to timer dispatcher",
+			"jobId", job.ID,
+			"monitorId", job.MonitorID)
+		return fmt.Errorf("failed to schedule received job: %w", err)
+	}
+
+	cs.logger.Info("job successfully scheduled for execution",
+		"jobId", job.ID,
+		"monitorId", job.MonitorID,
+		"nextExecution", "immediate")
+
+	return nil
 }
 
 // GetCollectJobService returns the collect job service.
