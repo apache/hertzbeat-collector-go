@@ -53,7 +53,7 @@ licenses-check: ## Check the licenses
 	license-eye -c ./tools/linter/license/.licenserc.yaml header check
 
 .PHONY: markdown-lint-check
-markdown-lint: ## Check the markdown files.
+markdown-lint-check: ## Check the markdown files.
 	@$(LOG_TARGET)
 	markdownlint --version
 	markdownlint --config ./tools/linter/markdownlint/markdown_lint_config.yaml .
