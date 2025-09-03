@@ -19,7 +19,7 @@
 
 .PHONY: lint
 lint: ## Check files
-lint: markdown-lint-checkt yaml-lint code-spell newline-check
+lint: markdown-lint-check yaml-lint code-spell newline-check
 
 .PHONY: codespell
 codespell: CODESPELL_SKIP := $(shell cat tools/linter/codespell/.codespell.skip | tr \\n ',')
