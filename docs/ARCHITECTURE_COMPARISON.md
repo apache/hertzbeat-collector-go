@@ -3,6 +3,7 @@
 ## 🔄 调度流程对比
 
 ### Java版本调度流程
+
 ```mermaid
 graph TD
     A[Manager调度器] --> B[一致性哈希分配]
@@ -21,6 +22,7 @@ graph TD
 ```
 
 ### Go版本调度流程
+
 ```mermaid
 graph TD
     A1[Manager调度器] --> B1[网络通信待完善]
@@ -57,6 +59,7 @@ graph TD
 ### 1. 并发处理
 
 #### Java版本
+
 ```java
 // 线程池配置
 ThreadPoolExecutor workerExecutor = new ThreadPoolExecutor(
@@ -70,6 +73,7 @@ ThreadPoolExecutor workerExecutor = new ThreadPoolExecutor(
 ```
 
 #### Go版本
+
 ```go
 // 协程池配置
 type WorkerPool struct {
@@ -90,6 +94,7 @@ func (wp *WorkerPool) adjustWorkerCount() {
 ### 2. 采集器注册
 
 #### Java版本 (SPI机制)
+
 ```java
 // META-INF/services/org.apache.hertzbeat.collector.collect.AbstractCollect
 org.apache.hertzbeat.collector.collect.database.JdbcCommonCollect
@@ -103,6 +108,7 @@ for (AbstractCollect collect : loader) {
 ```
 
 #### Go版本 (注册中心机制)
+
 ```go
 // 自动注册
 func init() {
@@ -127,6 +133,7 @@ func RegisterBuiltinCollectors(service *CollectService, logger logger.Logger) {
 ### 3. 任务分发策略
 
 #### Java版本 (多层分发)
+
 ```java
 // 1. TimerDispatcher调度
 wheelTimer.newTimeout(timerJob, interval, TimeUnit.SECONDS);
@@ -140,6 +147,7 @@ workerExecutor.execute(runnable);
 ```
 
 #### Go版本 (直接分发)
+
 ```go
 // 1. TimerDispatcher调度
 timeout := td.wheelTimer.NewTimeout(timerTask, delay)
@@ -154,6 +162,7 @@ for _, metric := range job.Metrics {
 ## 🚀 性能特性对比
 
 ### 启动性能
+
 | 指标 | Java版本 | Go版本 | 对比 |
 |------|----------|--------|------|
 | 启动时间 | ~3-5秒 | ~0.1-0.5秒 | Go快10倍 |
@@ -161,6 +170,7 @@ for _, metric := range job.Metrics {
 | 文件大小 | ~50MB+ | ~10-20MB | Go小50%+ |
 
 ### 运行时性能
+
 | 指标 | Java版本 | Go版本 | 对比 |
 |------|----------|--------|------|
 | 协程/线程开销 | 2MB/线程 | 2KB/协程 | Go省99.9% |
@@ -172,6 +182,7 @@ for _, metric := range job.Metrics {
 ### 添加新采集器复杂度
 
 #### Java版本
+
 1. ✅ 实现AbstractCollect接口
 2. ✅ 在META-INF/services中注册 
 3. ✅ 自动发现，无需修改代码
@@ -179,6 +190,7 @@ for _, metric := range job.Metrics {
 **总结**: 配置简单，但依赖SPI机制
 
 #### Go版本  
+
 1. ✅ 实现AbstractCollector接口
 2. ✅ 添加init()注册函数
 3. ✅ 在registry.go中添加import
@@ -188,6 +200,7 @@ for _, metric := range job.Metrics {
 ### 调试和监控
 
 #### Java版本
+
 ```java
 // JVM工具链丰富
 - JProfiler、VisualVM等性能分析
@@ -196,6 +209,7 @@ for _, metric := range job.Metrics {
 ```
 
 #### Go版本
+
 ```go
 // Go原生工具
 - go tool pprof性能分析  
@@ -206,12 +220,14 @@ for _, metric := range job.Metrics {
 ## 🎯 选择建议
 
 ### 适合Java版本的场景
+
 - ✅ 企业级环境，成熟度要求高
 - ✅ 需要丰富的第三方库支持
 - ✅ 团队Java技能更强
 - ✅ CPU密集型采集任务
 
 ### 适合Go版本的场景  
+
 - ✅ 云原生环境，资源敏感
 - ✅ 高并发IO密集型采集
 - ✅ 快速启动和部署需求
@@ -220,11 +236,13 @@ for _, metric := range job.Metrics {
 ## 📈 发展趋势
 
 ### Java版本优势保持
+
 - 生态系统成熟
 - 企业级特性完善
 - 社区支持强大
 
 ### Go版本发展方向
+
 - 网络通信层完善
 - 更多协议采集器
 - 云原生特性增强
@@ -235,6 +253,7 @@ for _, metric := range job.Metrics {
 ## 📋 快速参考
 
 ### 核心类对应关系
+
 | Java类 | Go对应 | 功能 |
 |--------|--------|------|
 | `TimerDispatcher` | `TimerDispatcher` | 时间轮调度 |
@@ -245,6 +264,7 @@ for _, metric := range job.Metrics {
 | `AbstractCollect` | `AbstractCollector` | 采集器接口 |
 
 ### 关键配置参数
+
 | 配置项 | Java默认值 | Go默认值 | 说明 |
 |--------|------------|----------|------|
 | 核心工作线程 | CPU核数 | CPU核数 | 基础并发数 |

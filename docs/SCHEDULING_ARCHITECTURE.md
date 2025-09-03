@@ -7,6 +7,7 @@
 ## 🏗️ 整体架构对比
 
 ### Java版本架构
+
 ```
 Manager调度器 → 一致性哈希 → 网络通信 → Collector
     ↓
@@ -18,6 +19,7 @@ CollectStrategyFactory(SPI) → 具体采集器 → 返回结果
 ```
 
 ### Go版本架构
+
 ```
 Manager调度器 → 网络通信(待完善) → CollectServer
     ↓
@@ -33,6 +35,7 @@ CollectorRegistry(手动注册) → 具体采集器 → 返回结果
 ### 1. 任务接收阶段
 
 #### Java版本
+
 ```java
 // Manager发送任务
 ClusterMsg.Message message = ClusterMsg.Message.newBuilder()
@@ -51,6 +54,7 @@ public void response(ClusterMsg.Message message) {
 ```
 
 #### Go版本
+
 ```go
 // Manager发送任务 (目前为模拟方式)
 func (cs *CollectServer) ReceiveJob(job *jobtypes.Job, eventListener timer.CollectResponseEventListener) error {
@@ -64,12 +68,14 @@ func (cs *CollectServer) ReceiveJob(job *jobtypes.Job, eventListener timer.Colle
 ```
 
 **主要差异**:
+
 - Java: 完整的网络通信协议栈
 - Go: 网络层待完善，目前使用模拟接口
 
 ### 2. 任务调度阶段
 
 #### Java版本
+
 ```java
 // TimerDispatcher调度
 @Override
@@ -90,6 +96,7 @@ public void run(Timeout timeout) throws Exception {
 ```
 
 #### Go版本
+
 ```go
 // TimerDispatcher调度
 func (td *TimerDispatcher) AddJob(job *jobtypes.Job, eventListener CollectResponseEventListener) error {
@@ -127,12 +134,14 @@ func (td *TimerDispatcher) DispatchMetricsTask(timeout *jobtypes.Timeout) error 
 ```
 
 **主要差异**:
+
 - Java: 使用CommonDispatcher作为中间层
 - Go: TimerDispatcher直接分发任务到WorkerPool
 
 ### 3. 任务分发阶段
 
 #### Java版本
+
 ```java
 // CommonDispatcher处理
 public void run() {
@@ -149,6 +158,7 @@ private final MetricsCollectorQueue jobRequestQueue;
 ```
 
 #### Go版本
+
 ```go
 // WorkerPool直接处理
 func (wp *WorkerPool) Submit(task Task) error {
@@ -182,12 +192,14 @@ func (w *worker) executeTask(task Task) {
 ```
 
 **主要差异**:
+
 - Java: 专门的优先级队列 + 分发线程
 - Go: 直接的通道队列 + Goroutine池
 
 ### 4. 采集器调用阶段
 
 #### Java版本 (SPI自动发现)
+
 ```java
 // CollectStrategyFactory使用SPI
 @Override
@@ -205,6 +217,7 @@ org.apache.hertzbeat.collector.collect.http.HttpCollectImpl
 ```
 
 #### Go版本 (手动注册 + 新的自动注册机制)
+
 ```go
 // 传统手动注册方式
 func RegisterBuiltinCollectors(service *CollectService, logger logger.Logger) {
@@ -226,6 +239,7 @@ func init() {
 ```
 
 **主要差异**:
+
 - Java: 使用Java SPI机制自动发现
 - Go: 使用init()函数 + 注册中心的自动注册机制
 
@@ -234,11 +248,13 @@ func init() {
 ### 1. TimerDispatcher (时间轮调度器)
 
 #### 共同特性
+
 - 都使用HashedWheelTimer实现
 - 支持循环任务和一次性任务
 - 任务超时管理
 
 #### 差异对比
+
 | 特性 | Java版本 | Go版本 |
 |------|---------|--------|
 | 超时监控 | 独立的ScheduledExecutor | 集成在TimerDispatcher中 |
@@ -249,6 +265,7 @@ func init() {
 ### 2. WorkerPool (工作线程池)
 
 #### Java版本特性
+
 ```java
 // 基于ThreadPoolExecutor
 private ThreadPoolExecutor workerExecutor;
@@ -261,6 +278,7 @@ workerExecutor = new ThreadPoolExecutor(coreSize, maxSize, 10, TimeUnit.SECONDS,
 ```
 
 #### Go版本特性
+
 ```go
 // 基于Goroutine池
 type WorkerPool struct {
@@ -283,6 +301,7 @@ func (wp *WorkerPool) adjustWorkerCount() {
 ```
 
 #### 差异对比
+
 | 特性 | Java版本 | Go版本 |
 |------|---------|--------|
 | 并发模型 | 线程池 | Goroutine池 |
@@ -293,6 +312,7 @@ func (wp *WorkerPool) adjustWorkerCount() {
 ### 3. 采集器注册机制
 
 #### Java版本 (SPI机制)
+
 ```java
 // 优点：
 - 自动发现，无需手动注册
@@ -306,6 +326,7 @@ func (wp *WorkerPool) adjustWorkerCount() {
 ```
 
 #### Go版本 (注册中心机制)
+
 ```go
 // 优点：
 - 支持优先级控制
@@ -323,11 +344,13 @@ func (wp *WorkerPool) adjustWorkerCount() {
 ### 1. 内存使用
 
 #### Java版本
+
 - **优势**: JVM成熟的内存管理
 - **劣势**: 较大的基础内存占用
 - **特点**: GC压力，但有成熟的调优工具
 
 #### Go版本
+
 - **优势**: 更小的内存占用
 - **劣势**: 需要手动管理某些资源
 - **特点**: GC延迟低，内存效率高
@@ -335,11 +358,13 @@ func (wp *WorkerPool) adjustWorkerCount() {
 ### 2. 并发性能
 
 #### Java版本
+
 - **线程开销**: 每个线程约2MB栈空间
 - **上下文切换**: 相对较重
 - **适用场景**: CPU密集型任务
 
 #### Go版本
+
 - **Goroutine开销**: 每个约2KB栈空间
 - **上下文切换**: 非常轻量
 - **适用场景**: IO密集型任务
@@ -347,11 +372,13 @@ func (wp *WorkerPool) adjustWorkerCount() {
 ### 3. 启动速度
 
 #### Java版本
+
 - **JVM启动**: 相对较慢
 - **类加载**: SPI机制需要扫描classpath
 - **预热时间**: JIT编译需要时间
 
 #### Go版本
+
 - **编译启动**: 非常快速
 - **静态链接**: 无需额外依赖
 - **即时性能**: 无需预热
@@ -359,18 +386,21 @@ func (wp *WorkerPool) adjustWorkerCount() {
 ## 🔮 发展路线图
 
 ### 短期目标 (已完成)
+
 - ✅ 基础调度框架
 - ✅ JDBC采集器实现
 - ✅ 自动注册机制
 - ✅ 超时监控和重试
 
 ### 中期目标 (进行中)
+
 - 🔄 完善网络通信层
 - 🔄 实现更多协议采集器 (HTTP, SSH, SNMP等)
 - 🔄 集群模式支持
 - 🔄 配置文件驱动的采集器管理
 
 ### 长期目标 (规划中)
+
 - 📋 插件化架构
 - 📋 热更新能力
 - 📋 云原生部署支持
@@ -428,6 +458,7 @@ logger.Info("工作池状态",
 ### 3. 性能优化建议
 
 #### 调度器优化
+
 ```go
 // 1. 合理设置时间轮参数
 timerDispatcher := timer.NewTimerDispatcher(logger)
@@ -443,6 +474,7 @@ func (td *TimerDispatcher) BatchDispatch(jobs []*jobtypes.Job) error {
 ```
 
 #### 工作池优化
+
 ```go
 // 1. 根据任务特性调整池大小
 config := worker.WorkerPoolConfig{
@@ -462,6 +494,7 @@ type PriorityTask struct {
 ## 📝 最佳实践
 
 ### 1. 错误处理
+
 ```go
 // 采集器中的错误处理
 func (jc *JDBCCollector) Collect(metrics *jobtypes.Metrics) *jobtypes.CollectRepMetricsData {
@@ -476,6 +509,7 @@ func (jc *JDBCCollector) Collect(metrics *jobtypes.Metrics) *jobtypes.CollectRep
 ```
 
 ### 2. 资源管理
+
 ```go
 // 连接池管理
 type JDBCCollector struct {
@@ -496,6 +530,7 @@ func (jc *JDBCCollector) getConnection(dsn string) (*sql.DB, error) {
 ```
 
 ### 3. 配置管理
+
 ```go
 // 支持配置文件和环境变量
 type CollectorConfig struct {
@@ -512,18 +547,21 @@ type CollectorConfig struct {
 HertzBeat Go版本的调度架构在保持与Java版本核心理念一致的同时，充分利用了Go语言的特性优势：
 
 ### 核心优势
+
 1. **高并发性能**: Goroutine模型适合IO密集的采集任务
 2. **低资源占用**: 更小的内存占用和更快的启动速度
 3. **简洁架构**: 减少了中间层，调度链路更直接
 4. **类型安全**: 编译时类型检查，减少运行时错误
 
 ### 主要差异
+
 1. **网络层**: 待完善，目前使用模拟接口
 2. **采集器注册**: 从SPI改为init()函数 + 注册中心
 3. **并发模型**: 从线程池改为Goroutine池
 4. **错误处理**: 更显式的错误处理机制
 
 ### 发展方向
+
 Go版本将在保持高性能和低资源占用优势的基础上，逐步完善网络通信、集群支持等企业级特性，最终实现与Java版本功能对等但性能更优的目标。
 
 ---

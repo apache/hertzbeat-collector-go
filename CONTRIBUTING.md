@@ -29,7 +29,6 @@ Even small corrections to typos are very welcome :)
 > To get HertzBeat code running on your development tools, and able to debug with breakpoints.
 > This is a front-end and back-end separation project. To start the local code, the back-end [manager](manager) and the front-end [web-app](web-app) must be started separately.
 
-
 #### Backend start
 
 1. Requires `maven3+`, `java17` and `lombok` environments
@@ -58,7 +57,6 @@ Even small corrections to typos are very welcome :)
 
 7. Browser access to localhost:4200 to start, default account/password is *admin/hertzbeat*
 
-
 ### Find tasks
 
 Find the issue you are interested in! On our GitHub repo issue list, we often publish some issues with the label good first issue or status: volunteer wanted.
@@ -70,23 +68,31 @@ Of course, if you have a good idea, you can also propose it directly on GitHub D
 
 1. First you need to fork your target [hertzbeat repository](https://github.com/apache/hertzbeat).
 2. Then download the code locally with git command:
+
     ```shell
     git clone git@github.com:${YOUR_USERNAME}/hertzbeat.git #Recommended  
     ```
+
 3. After the download is complete, please refer to the getting started guide or README file of the target repository to initialize the project.
 4. Then, you can refer to the following command to submit the code:
+
     ```shell
     git checkout -b a-feature-branch #Recommended  
     ```
+
 5. Submit the coed as a commit, the commit message format specification required: [module name or type name]feature or bugfix or doc: custom message.
+
     ```shell
     git add <modified file/path> 
     git commit -m '[docs]feature: necessary instructions' #Recommended 
     ```
+
 6. Push to the remote repository
+
     ```shell
     git push origin a-feature-branch   
     ```
+
 7. Then you can initiate a new PR (Pull Request) on GitHub.
 
 Please note that the title of the PR needs to conform to our spec, and write the necessary description in the PR to facilitate code review by Committers and other contributors.
@@ -119,7 +125,8 @@ git pull upstream master
 ```
 
 ### HertzBeat Improvement Proposal (HIP)
-If you have major new features(e.g., support metrics push gateway, support logs monitoring), you need to write a design document known as a HertzBeat Improvement Proposal (HIP). Before starting to write a HIP, make sure you follow the process [here](https://github.com/apache/hertzbeat/tree/master/hip).
+
+If you have major new features(e.g., support metrics push gateway, support logs monitoring), you need to write a design document known as a HertzBeat Improvement Proposal (HIP). Before starting to write a HIP, make sure you follow the process [HertzBeat hip](https://github.com/apache/hertzbeat/tree/master/hip).
 
 ### How to become a Committer?
 
@@ -134,14 +141,23 @@ Add WeChat account `ahertzbeat` to pull you into the WeChat group.
 ## 🥐 Architecture
 
 - **[manager](https://github.com/apache/hertzbeat/tree/master/hertzbeat-manager)** Provide monitoring management, system management basic services.
+
 > Provides monitoring management, monitoring configuration management, system user management, etc.
+
 - **[collector](https://github.com/apache/hertzbeat/tree/master/collector)** Provide metrics data collection services.
+
 > Use common protocols to remotely collect and obtain peer-to-peer metrics data.
+
 - **[warehouse](https://github.com/apache/hertzbeat/tree/master/warehouse)** Provide monitoring data warehousing services.
+
 > Metrics data management, data query, calculation and statistics.
+
 - **[alerter](https://github.com/apache/hertzbeat/tree/master/hertzbeat-alerter)** Provide alert service.
+
 > Alarm calculation trigger, monitoring status linkage, alarm configuration, and alarm notification.
+
 - **[web-app](https://github.com/apache/hertzbeat/tree/master/web-app)** Provide web ui.
+
 > Angular Web UI.
 
 ![hertzBeat](home/static/img/docs/hertzbeat-arch.png)
@@ -195,7 +211,6 @@ Add WeChat account `ahertzbeat` to pull you into the WeChat group.
 
 5. 启动`springboot manager`服务 `manager/src/main/java/org/apache/hertzbeat/hertzbeat-manager/Manager.java`
 
-
 #### 前端启动
 
 1. 需要 `nodejs yarn` 环境, Make sure `Node.js >= 18`
@@ -223,23 +238,31 @@ Add WeChat account `ahertzbeat` to pull you into the WeChat group.
 
 1. 首先您需要 Fork 目标仓库 [hertzbeat repository](https://github.com/apache/hertzbeat).
 2. 然后 用git命令 将代码下载到本地:
+
     ```shell
     git clone git@github.com:${YOUR_USERNAME}/hertzbeat.git #Recommended  
     ```
+
 3. 下载完成后，请参考目标仓库的入门指南或者 README 文件对项目进行初始化。
 4. 接着，您可以参考如下命令进行代码的提交, 切换新的分支, 进行开发:
+
     ```shell
     git checkout -b a-feature-branch #Recommended  
     ```
+
 5. 提交 commit , commit 描述信息需要符合约定格式: [module name or type name]feature or bugfix or doc: custom message.
+
     ```shell
     git add <modified file/path> 
     git commit -m '[docs]feature: necessary instructions' #Recommended 
     ```
+
 6. 推送到远程仓库
+
     ```shell
     git push origin a-feature-branch   
     ```
+
 7. 然后您就可以在 GitHub 上发起新的 PR (Pull Request)。
 
 请注意 PR 的标题需要符合我们的规范，并且在 PR 中写上必要的说明，来方便 Committer 和其他贡献者进行代码审查。
@@ -272,6 +295,7 @@ git pull upstream master
 ```
 
 ### HertzBeat 改进提案 (HIP)
+
 如果您有重大的新特性（例如，支持指标推送网关，日志监控等），您需要编写一个被称为 HertzBeat 改进提案（HertzBeat Improvement Proposal，HIP）的设计文档。在开始编写 HIP 之前，请确保您遵循了[这里](https://github.com/apache/hertzbeat/tree/master/hip)的流程。
 
 ### 如何成为Committer？
@@ -287,14 +311,23 @@ Add WeChat account `ahertzbeat` to pull you into the WeChat group.
 ### 模块
 
 - **[manager](https://github.com/apache/hertzbeat/tree/master/hertzbeat-manager)** 提供监控管理,系统管理基础服务
+
 > 提供对监控的管理，监控应用配置的管理，系统用户租户后台管理等。
+
 - **[collector](https://github.com/apache/hertzbeat/tree/master/collector)** 提供监控数据采集服务
+
 > 使用通用协议远程采集获取对端指标数据。
+
 - **[warehouse](https://github.com/apache/hertzbeat/tree/master/warehouse)** 提供监控数据仓储服务
+
 > 采集指标结果数据管理，数据落盘，查询，计算统计。
+
 - **[alerter](https://github.com/apache/hertzbeat/tree/master/hertzbeat-alerter)** 提供告警服务
+
 > 告警计算触发，任务状态联动，告警配置，告警通知。
+
 - **[web-app](https://github.com/apache/hertzbeat/tree/master/web-app)** 提供可视化控制台页面
+
 > 监控告警系统可视化控制台前端
 
 ![hertzBeat](home/static/img/docs/hertzbeat-arch.png)     
