@@ -2,34 +2,50 @@ package job
 
 // hertzbeat Collect Job related types
 
-//type Job struct {
-//	ID                  int64
-//	TenantID            int64
-//	MonitorID           int64
-//	Metadata            map[string]string
-//	Labels              map[string]string
-//	Annotations         map[string]string
-//	Hide                bool
-//	Category            string
-//	App                 string
-//	Name                map[string]string
-//	Help                map[string]string
-//	HelpLink            map[string]string
-//	Timestamp           int64
-//	DefaultInterval     int64
-//	Intervals           *list.List
-//	IsCyclic            bool
-//	Params              []ParamDefine
-//	Metrics             []Metrics
-//	Configmap           []Configmap
-//	IsSd                bool
-//	PrometheusProxyMode bool
-//
-//	// Internal/temporary fields (not serialized)
-//	EnvConfigmaps    map[string]Configmap
-//	DispatchTime     int64
-//	PriorMetrics     *list.List
-//	ResponseDataTemp []MetricsData
-//
-//	mu sync.Mutex
-//}
+// Job represents a complete monitoring job
+type Job struct {
+	ID                  int64             `json:"id"`
+	TenantID            int64             `json:"tenantId"`
+	MonitorID           int64             `json:"monitorId"`
+	Metadata            map[string]string `json:"metadata"`
+	Labels              map[string]string `json:"labels"`
+	Annotations         map[string]string `json:"annotations"`
+	Hide                bool              `json:"hide"`
+	Category            string            `json:"category"`
+	App                 string            `json:"app"`
+	Name                map[string]string `json:"name"`
+	Help                map[string]string `json:"help"`
+	HelpLink            map[string]string `json:"helpLink"`
+	Timestamp           int64             `json:"timestamp"`
+	DefaultInterval     int64             `json:"defaultInterval"`
+	Intervals           []int64           `json:"intervals"`
+	IsCyclic            bool              `json:"isCyclic"`
+	Params              []ParamDefine     `json:"params"`
+	Metrics             []Metrics         `json:"metrics"`
+	Configmap           []Configmap       `json:"configmap"`
+	IsSd                bool              `json:"isSd"`
+	PrometheusProxyMode bool              `json:"prometheusProxyMode"`
+
+	// Internal fields
+	EnvConfigmaps    map[string]Configmap `json:"-"`
+	DispatchTime     int64                `json:"-"`
+	PriorMetrics     []Metrics            `json:"-"`
+	ResponseDataTemp []MetricsData        `json:"-"`
+}
+
+// GetNextCollectMetrics returns the metrics that should be collected next
+// This is a simplified version - in the full implementation this would handle
+// metric priorities, dependencies, and collection levels
+func (j *Job) GetNextCollectMetrics() []*Metrics {
+	result := make([]*Metrics, 0, len(j.Metrics))
+	for i := range j.Metrics {
+		result = append(result, &j.Metrics[i])
+	}
+	return result
+}
+
+// ConstructPriorMetrics prepares prior metrics for collection dependencies
+func (j *Job) ConstructPriorMetrics() {
+	j.PriorMetrics = make([]Metrics, len(j.Metrics))
+	copy(j.PriorMetrics, j.Metrics)
+}
