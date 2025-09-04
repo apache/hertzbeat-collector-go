@@ -42,18 +42,6 @@ func RegisterBuiltinCollectors(service *CollectService, logger logger.Logger) {
 	}
 }
 
-// RegisterBuiltinCollectorsLegacy 传统的手动注册方式 (已废弃)
-// 保留用于兼容性，建议使用RegisterBuiltinCollectors
-//
-// Deprecated: 使用RegisterBuiltinCollectors替代，它会自动注册所有采集器
-func RegisterBuiltinCollectorsLegacy(service *CollectService, logger logger.Logger) {
-	logger.Info("⚠️  使用已废弃的手动注册方式，建议切换到自动注册")
-
-	// 这里可以保留原来的手动注册逻辑用于兼容
-	// jdbcCollector := database.NewJDBCCollector(logger)
-	// service.RegisterCollector(jdbcCollector.SupportProtocol(), jdbcCollector)
-}
-
 // NewCollectServiceWithBuiltins creates a new collect service and registers all built-in collectors
 // This is a convenience function for typical usage
 func NewCollectServiceWithBuiltins(logger logger.Logger) *CollectService {

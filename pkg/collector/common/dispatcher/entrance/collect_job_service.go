@@ -190,10 +190,10 @@ func (cjs *CollectJobService) SendAsyncCollectData(metricsData jobtypes.CollectR
 		return fmt.Errorf("failed to serialize metrics data: %w", err)
 	}
 
-	message := &api.Message{
+	message := &cluster_msg.Message{
 		Identity:  cjs.collectorIdentity,
-		Direction: api.Direction_REQUEST,
-		Type:      api.MessageType_RESPONSE_CYCLIC_TASK_DATA,
+		Direction: cluster_msg.Direction_REQUEST,
+		Type:      cluster_msg.MessageType_RESPONSE_CYCLIC_TASK_DATA,
 		Msg:       data,
 	}
 
@@ -212,10 +212,10 @@ func (cjs *CollectJobService) SendAsyncServiceDiscoveryData(metricsData jobtypes
 		return fmt.Errorf("failed to serialize metrics data: %w", err)
 	}
 
-	message := &api.Message{
+	message := &cluster_msg.Message{
 		Identity:  cjs.collectorIdentity,
-		Direction: api.Direction_REQUEST,
-		Type:      api.MessageType_RESPONSE_CYCLIC_TASK_SD_DATA,
+		Direction: cluster_msg.Direction_REQUEST,
+		Type:      cluster_msg.MessageType_RESPONSE_CYCLIC_TASK_SD_DATA,
 		Msg:       data,
 	}
 
@@ -281,10 +281,10 @@ func (sjt *syncJobTask) Execute() error {
 			return err
 		}
 
-		message := &api.Message{
+		message := &cluster_msg.Message{
 			Identity:  sjt.service.collectorIdentity,
-			Direction: api.Direction_REQUEST,
-			Type:      api.MessageType_RESPONSE_ONE_TIME_TASK_DATA,
+			Direction: cluster_msg.Direction_REQUEST,
+			Type:      cluster_msg.MessageType_RESPONSE_ONE_TIME_TASK_DATA,
 			Msg:       data,
 		}
 

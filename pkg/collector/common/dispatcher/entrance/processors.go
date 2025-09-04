@@ -47,15 +47,15 @@ func NewHeartbeatProcessor(logger logger.Logger) *HeartbeatProcessor {
 }
 
 // Process processes a heartbeat message.
-func (hp *HeartbeatProcessor) Process(ctx context.Context, message *api.Message) error {
+func (hp *HeartbeatProcessor) Process(ctx context.Context, message *cluster_msg.Message) error {
 	hp.logger.Info("received heartbeat message", "identity", message.Identity)
 	// Heartbeat messages typically don't require any action
 	return nil
 }
 
 // GetMessageType returns the message type this processor handles.
-func (hp *HeartbeatProcessor) GetMessageType() api.MessageType {
-	return api.MessageType_HEARTBEAT
+func (hp *HeartbeatProcessor) GetMessageType() cluster_msg.MessageType {
+	return cluster_msg.MessageType_HEARTBEAT
 }
 
 // CollectCyclicDataProcessor handles cyclic collection task assignment.
@@ -73,7 +73,7 @@ func NewCollectCyclicDataProcessor(logger logger.Logger, collectJobService Colle
 }
 
 // Process processes a cyclic collection task message.
-func (cp *CollectCyclicDataProcessor) Process(ctx context.Context, message *api.Message) error {
+func (cp *CollectCyclicDataProcessor) Process(ctx context.Context, message *cluster_msg.Message) error {
 	cp.logger.Info("received cyclic collection task", "identity", message.Identity)
 
 	// Deserialize job from message
@@ -92,8 +92,8 @@ func (cp *CollectCyclicDataProcessor) Process(ctx context.Context, message *api.
 }
 
 // GetMessageType returns the message type this processor handles.
-func (cp *CollectCyclicDataProcessor) GetMessageType() api.MessageType {
-	return api.MessageType_ISSUE_CYCLIC_TASK
+func (cp *CollectCyclicDataProcessor) GetMessageType() cluster_msg.MessageType {
+	return cluster_msg.MessageType_ISSUE_CYCLIC_TASK
 }
 
 // DeleteCyclicTaskProcessor handles cyclic collection task deletion.
@@ -111,7 +111,7 @@ func NewDeleteCyclicTaskProcessor(logger logger.Logger, collectJobService Collec
 }
 
 // Process processes a delete cyclic collection task message.
-func (dp *DeleteCyclicTaskProcessor) Process(ctx context.Context, message *api.Message) error {
+func (dp *DeleteCyclicTaskProcessor) Process(ctx context.Context, message *cluster_msg.Message) error {
 	dp.logger.Info("received delete cyclic task", "identity", message.Identity)
 
 	// Parse job ID from message
@@ -132,8 +132,8 @@ func (dp *DeleteCyclicTaskProcessor) Process(ctx context.Context, message *api.M
 }
 
 // GetMessageType returns the message type this processor handles.
-func (dp *DeleteCyclicTaskProcessor) GetMessageType() api.MessageType {
-	return api.MessageType_DELETE_CYCLIC_TASK
+func (dp *DeleteCyclicTaskProcessor) GetMessageType() cluster_msg.MessageType {
+	return cluster_msg.MessageType_DELETE_CYCLIC_TASK
 }
 
 // CollectOneTimeDataProcessor handles one-time collection task assignment.
@@ -151,7 +151,7 @@ func NewCollectOneTimeDataProcessor(logger logger.Logger, collectJobService Coll
 }
 
 // Process processes a one-time collection task message.
-func (op *CollectOneTimeDataProcessor) Process(ctx context.Context, message *api.Message) error {
+func (op *CollectOneTimeDataProcessor) Process(ctx context.Context, message *cluster_msg.Message) error {
 	op.logger.Info("received one-time collection task", "identity", message.Identity)
 
 	// Deserialize job from message
@@ -170,8 +170,8 @@ func (op *CollectOneTimeDataProcessor) Process(ctx context.Context, message *api
 }
 
 // GetMessageType returns the message type this processor handles.
-func (op *CollectOneTimeDataProcessor) GetMessageType() api.MessageType {
-	return api.MessageType_ISSUE_ONE_TIME_TASK
+func (op *CollectOneTimeDataProcessor) GetMessageType() cluster_msg.MessageType {
+	return cluster_msg.MessageType_ISSUE_ONE_TIME_TASK
 }
 
 // GoOfflineProcessor handles go offline requests.
@@ -187,15 +187,15 @@ func NewGoOfflineProcessor(logger logger.Logger) *GoOfflineProcessor {
 }
 
 // Process processes a go offline message.
-func (gop *GoOfflineProcessor) Process(ctx context.Context, message *api.Message) error {
+func (gop *GoOfflineProcessor) Process(ctx context.Context, message *cluster_msg.Message) error {
 	gop.logger.Info("received go offline request", "identity", message.Identity)
 	// TODO: Implement offline logic (pause collection, etc.)
 	return nil
 }
 
 // GetMessageType returns the message type this processor handles.
-func (gop *GoOfflineProcessor) GetMessageType() api.MessageType {
-	return api.MessageType_GO_OFFLINE
+func (gop *GoOfflineProcessor) GetMessageType() cluster_msg.MessageType {
+	return cluster_msg.MessageType_GO_OFFLINE
 }
 
 // GoOnlineProcessor handles go online requests.
@@ -211,15 +211,15 @@ func NewGoOnlineProcessor(logger logger.Logger) *GoOnlineProcessor {
 }
 
 // Process processes a go online message.
-func (gop *GoOnlineProcessor) Process(ctx context.Context, message *api.Message) error {
+func (gop *GoOnlineProcessor) Process(ctx context.Context, message *cluster_msg.Message) error {
 	gop.logger.Info("received go online request", "identity", message.Identity)
 	// TODO: Implement online logic (resume collection, etc.)
 	return nil
 }
 
 // GetMessageType returns the message type this processor handles.
-func (gop *GoOnlineProcessor) GetMessageType() api.MessageType {
-	return api.MessageType_GO_ONLINE
+func (gop *GoOnlineProcessor) GetMessageType() cluster_msg.MessageType {
+	return cluster_msg.MessageType_GO_ONLINE
 }
 
 // GoCloseProcessor handles go close requests.
@@ -235,15 +235,15 @@ func NewGoCloseProcessor(logger logger.Logger) *GoCloseProcessor {
 }
 
 // Process processes a go close message.
-func (gcp *GoCloseProcessor) Process(ctx context.Context, message *api.Message) error {
+func (gcp *GoCloseProcessor) Process(ctx context.Context, message *cluster_msg.Message) error {
 	gcp.logger.Info("received go close request", "identity", message.Identity)
 	// TODO: Implement close logic (shutdown gracefully, etc.)
 	return nil
 }
 
 // GetMessageType returns the message type this processor handles.
-func (gcp *GoCloseProcessor) GetMessageType() api.MessageType {
-	return api.MessageType_GO_CLOSE
+func (gcp *GoCloseProcessor) GetMessageType() cluster_msg.MessageType {
+	return cluster_msg.MessageType_GO_CLOSE
 }
 
 // deserializeJob deserializes a job from message bytes.

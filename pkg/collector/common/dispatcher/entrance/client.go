@@ -35,8 +35,8 @@ import (
 
 // MessageProcessor defines the interface for processing received messages.
 type MessageProcessor interface {
-	Process(ctx context.Context, message *api.Message) error
-	GetMessageType() api.MessageType
+	Process(ctx context.Context, message *cluster_msg.Message) error
+	GetMessageType() cluster_msg.MessageType
 }
 
 // NetworkEventListener defines the interface for network events.
@@ -58,7 +58,7 @@ type NetworkClient struct {
 	isConnected atomic.Bool
 	isShutdown  atomic.Bool
 
-	processors      map[api.MessageType]MessageProcessor
+	processors      map[cluster_msg.MessageType]MessageProcessor
 	processorsMutex sync.RWMutex
 
 	heartbeatTicker *time.Ticker
@@ -67,8 +67,8 @@ type NetworkClient struct {
 	wg              sync.WaitGroup
 
 	// For sending messages
-	sendChan   chan *api.Message
-	sendBuffer chan *api.Message
+	sendChan   chan *cluster_msg.Message
+	sendBuffer chan *cluster_msg.Message
 }
 
 // NewNetworkClient creates a new NetworkClient instance.
@@ -90,15 +90,15 @@ func NewNetworkClient(
 		collectorConfig: collectorConfig,
 		logger:          logger.WithName("network-client"),
 		eventListener:   eventListener,
-		processors:      make(map[api.MessageType]MessageProcessor),
+		processors:      make(map[cluster_msg.MessageType]MessageProcessor),
 		stopChan:        make(chan struct{}),
-		sendChan:        make(chan *api.Message, 100),  // Buffered channel for outgoing messages
-		sendBuffer:      make(chan *api.Message, 1000), // Larger buffer for high throughput
+		sendChan:        make(chan *cluster_msg.Message, 100),  // Buffered channel for outgoing messages
+		sendBuffer:      make(chan *cluster_msg.Message, 1000), // Larger buffer for high throughput
 	}
 }
 
 // RegisterProcessor registers a message processor for a specific message type.
-func (nc *NetworkClient) RegisterProcessor(msgType api.MessageType, processor MessageProcessor) {
+func (nc *NetworkClient) RegisterProcessor(msgType cluster_msg.MessageType, processor MessageProcessor) {
 	nc.processorsMutex.Lock()
 	defer nc.processorsMutex.Unlock()
 	nc.processors[msgType] = processor
@@ -147,7 +147,7 @@ func (nc *NetworkClient) Stop() error {
 }
 
 // SendMessage sends a message to the manager.
-func (nc *NetworkClient) SendMessage(message *api.Message) error {
+func (nc *NetworkClient) SendMessage(message *cluster_msg.Message) error {
 	if nc.isShutdown.Load() {
 		return fmt.Errorf("client is shutdown")
 	}
@@ -239,10 +239,10 @@ func (nc *NetworkClient) connect() error {
 	}
 
 	// Send GO_ONLINE message
-	onlineMsg := &api.Message{
+	onlineMsg := &cluster_msg.Message{
 		Identity:  nc.collectorConfig.Identity,
-		Direction: api.Direction_REQUEST,
-		Type:      api.MessageType_GO_ONLINE,
+		Direction: cluster_msg.Direction_REQUEST,
+		Type:      cluster_msg.MessageType_GO_ONLINE,
 		Msg: []byte(fmt.Sprintf(`{"identity":"%s","mode":"%s","version":"%s","ip":"%s"}`,
 			nc.collectorConfig.Identity, nc.collectorConfig.Mode, nc.collectorConfig.Version, nc.collectorConfig.IP)),
 	}
@@ -275,10 +275,10 @@ func (nc *NetworkClient) heartbeatLoop() {
 		select {
 		case <-nc.heartbeatTicker.C:
 			if nc.isConnected.Load() {
-				heartbeatMsg := &api.Message{
+				heartbeatMsg := &cluster_msg.Message{
 					Identity:  nc.collectorConfig.Identity,
-					Direction: api.Direction_REQUEST,
-					Type:      api.MessageType_HEARTBEAT,
+					Direction: cluster_msg.Direction_REQUEST,
+					Type:      cluster_msg.MessageType_HEARTBEAT,
 					Msg:       []byte("{}"),
 				}
 				if err := nc.writeMessage(heartbeatMsg); err != nil {
@@ -347,7 +347,7 @@ func (nc *NetworkClient) receiveLoop() {
 }
 
 // writeMessage writes a message to the connection.
-func (nc *NetworkClient) writeMessage(message *api.Message) error {
+func (nc *NetworkClient) writeMessage(message *cluster_msg.Message) error {
 	nc.connMutex.RLock()
 	conn := nc.conn
 	nc.connMutex.RUnlock()
@@ -394,7 +394,7 @@ func (nc *NetworkClient) writeMessage(message *api.Message) error {
 }
 
 // readMessage reads a message from the connection.
-func (nc *NetworkClient) readMessage() (*api.Message, error) {
+func (nc *NetworkClient) readMessage() (*cluster_msg.Message, error) {
 	nc.connMutex.RLock()
 	conn := nc.conn
 	nc.connMutex.RUnlock()
@@ -435,7 +435,7 @@ func (nc *NetworkClient) readMessage() (*api.Message, error) {
 	}
 
 	// Deserialize the message
-	message := &api.Message{}
+	message := &cluster_msg.Message{}
 	if err := proto.Unmarshal(data, message); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal message: %w", err)
 	}
@@ -444,7 +444,7 @@ func (nc *NetworkClient) readMessage() (*api.Message, error) {
 }
 
 // processMessage processes a received message using registered processors.
-func (nc *NetworkClient) processMessage(message *api.Message) {
+func (nc *NetworkClient) processMessage(message *cluster_msg.Message) {
 	nc.processorsMutex.RLock()
 	processor, exists := nc.processors[message.Type]
 	nc.processorsMutex.RUnlock()
