@@ -15,19 +15,24 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package main
+package config
 
-import (
-	"fmt"
-	"os"
+type CollectorConfig struct {
+	Collector CollectorSection `yaml:"collector"`
+}
 
-	"hertzbeat.apache.org/hertzbeat-collector-go/cmd/collector/root"
-)
+type CollectorSection struct {
+	Info CollectorInfo      `yaml:"info"`
+	Log  CollectorLogConfig `yaml:"log"`
+	// Add Dispatcher if needed
+}
 
-func main() {
+type CollectorInfo struct {
+	Name string `yaml:"name"`
+	IP   string `yaml:"ip"`
+	Port string `yaml:"port"`
+}
 
-	if err := root.GetRootCommand().Execute(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+type CollectorLogConfig struct {
+	Level string `yaml:"level"`
 }

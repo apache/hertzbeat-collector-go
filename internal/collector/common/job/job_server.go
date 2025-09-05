@@ -15,19 +15,31 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package main
+package job
 
 import (
-	"fmt"
-	"os"
+	"context"
 
-	"hertzbeat.apache.org/hertzbeat-collector-go/cmd/collector/root"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
-func main() {
+type Server struct {
+	logger logger.Logger
+}
 
-	if err := root.GetRootCommand().Execute(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+func NewServer(logger logger.Logger) *Server {
+
+	return &Server{
+		logger: logger,
 	}
+}
+
+func (s *Server) Start(ctx context.Context) error {
+
+	return nil
+}
+
+func (s *Server) Close() error {
+
+	return nil
 }

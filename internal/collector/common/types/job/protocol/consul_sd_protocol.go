@@ -15,19 +15,38 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package main
+package protocol
 
 import (
-	"fmt"
-	"os"
-
-	"hertzbeat.apache.org/hertzbeat-collector-go/cmd/collector/root"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
-func main() {
+type ConsulSdProtocol struct {
+	Host string
+	Port string
 
-	if err := root.GetRootCommand().Execute(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	logger logger.Logger
+}
+
+func NewConsulSdProtocol(host, port string, logger logger.Logger) *ConsulSdProtocol {
+
+	return &ConsulSdProtocol{
+		Host:   host,
+		Port:   port,
+		logger: logger,
 	}
+}
+
+func (cp *ConsulSdProtocol) IsInvalid() error {
+
+	if cp.Host == "" {
+		cp.logger.Error(ErrorInvalidHost, "consul sd protocol host is empty")
+		return ErrorInvalidHost
+	}
+	if cp.Port == "" {
+		cp.logger.Error(ErrorInvalidPort, "consul sd protocol port is empty")
+		return ErrorInvalidPort
+	}
+
+	return nil
 }

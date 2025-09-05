@@ -41,7 +41,7 @@
   - changed-files:
       - any-glob-to-any-file:
           - "cmd/**/*"
-          - "pkg/**/*"
+          - "internal/**/*"
           - "api/**/*"
 
 "area/example":

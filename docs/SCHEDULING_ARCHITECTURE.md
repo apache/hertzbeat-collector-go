@@ -226,7 +226,7 @@ func RegisterBuiltinCollectors(service *CollectService, logger logger.Logger) {
 }
 
 // 新的自动注册机制
-// pkg/collector/basic/database/jdbc_auto_register.go
+// internal/collector/basic/database/jdbc_auto_register.go
 func init() {
     registry.RegisterCollectorFactory(
         "jdbc",
@@ -435,7 +435,7 @@ func init() {
 }
 
 // 步骤3: 在registry.go中添加导入
-_ "hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/basic/redis"
+_ "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic/redis"
 ```
 
 ### 2. 调试和监控

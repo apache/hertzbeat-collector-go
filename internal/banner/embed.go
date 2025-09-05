@@ -15,19 +15,47 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package main
+package banner
 
 import (
-	"fmt"
+	"embed"
 	"os"
-
-	"hertzbeat.apache.org/hertzbeat-collector-go/cmd/collector/root"
+	"strconv"
+	"text/template"
 )
 
-func main() {
+//go:embed banner.txt
+var EmbedLogo embed.FS
 
-	if err := root.GetRootCommand().Execute(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+type bannerVars struct {
+	CollectorName string
+	ServerPort    string
+	Pid           string
+}
+
+func PrintBanner(appName, port string) error {
+
+	data, err := EmbedLogo.ReadFile("banner.txt")
+	if err != nil {
+
+		return err
 	}
+
+	tmpl, err := template.New("banner").Parse(string(data))
+	if err != nil {
+		return err
+	}
+
+	vars := bannerVars{
+		CollectorName: appName,
+		ServerPort:    port,
+		Pid:           strconv.Itoa(os.Getpid()),
+	}
+
+	err = tmpl.Execute(os.Stdout, vars)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

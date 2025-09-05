@@ -15,6 +15,13 @@
 # limitations under the License.
 #
 
+VERSION_PACKAGE := hertzbeat.apache.org/hertzbeat-collector-go/internal/cmd/version
+
+GO_LDFLAGS += -X $(VERSION_PACKAGE).hcgVersion=$(shell cat VERSION) \
+	-X $(VERSION_PACKAGE).gitCommitID=$(GIT_COMMIT)
+
+GIT_COMMIT:=$(shell git rev-parse HEAD)
+
 ##@ Golang
 
 .PHONY:
@@ -33,7 +40,7 @@ dev: ## Golang dev, run main by run.
 # build
 build: ## Golang build
 	@version=$$(cat VERSION); \
-	mkdir -p bin/ && go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/ ./...
+	CGO_ENABLED=0 go build -o bin/collector -ldflags "$(GO_LDFLAGS)" cmd/main.go
 
 .PHONY: init
 init: ## install base. For proto compile.

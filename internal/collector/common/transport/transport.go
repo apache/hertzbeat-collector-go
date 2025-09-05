@@ -15,19 +15,45 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package main
+package transport
 
 import (
-	"fmt"
-	"os"
+	"context"
 
-	"hertzbeat.apache.org/hertzbeat-collector-go/cmd/collector/root"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
-func main() {
+// RemotingService interface: copy java netty
+// todo ?
+type RemotingService interface {
+	Start() error
+	Shutdown() error
+	isStart() error
+}
 
-	if err := root.GetRootCommand().Execute(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+type RemotingClient interface {
+	RemotingService
+
+	// todo add
+}
+
+type Server struct {
+	logger logger.Logger
+}
+
+func NewServer(logger logger.Logger) *Server {
+
+	return &Server{
+		logger: logger,
 	}
+}
+
+func (s *Server) Start(ctx context.Context) error {
+
+	return nil
+}
+
+func (s *Server) Close() error {
+
+	return nil
 }

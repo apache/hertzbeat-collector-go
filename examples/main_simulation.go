@@ -26,11 +26,11 @@ import (
 	"syscall"
 	"time"
 
-	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector"
-	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/collector/common/dispatcher/entrance"
-	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/logger"
-	"hertzbeat.apache.org/hertzbeat-collector-go/pkg/types"
-	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/pkg/types/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/dispatcher/entrance"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	logger2 "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
 // go build -ldflags "-X main.Version=x.y.z"
@@ -49,7 +49,7 @@ func main() {
 	flag.Parse()
 
 	// 初始化日志
-	log := logger.DefaultLogger(os.Stdout, types.LogLevelInfo)
+	log := logger.DefaultLogger(os.Stdout, logger2.LogLevelInfo)
 	log.Info("🚀 启动HertzBeat Collector", "version", Version, "simulation", Simulation)
 	Simulation = true
 	if Simulation {
@@ -108,8 +108,8 @@ func runSimulationMode(log logger.Logger) {
 }
 
 // createManagerJDBCTask 创建模拟从Manager接收的JDBC采集任务
-func createManagerJDBCTask() *jobtypes.Job {
-	return &jobtypes.Job{
+func createManagerJDBCTask() *job.Job {
+	return &job.Job{
 		ID:              1001,
 		TenantID:        1,
 		MonitorID:       2001,
@@ -144,7 +144,7 @@ func createManagerJDBCTask() *jobtypes.Job {
 		},
 
 		// JDBC采集指标配置
-		Metrics: []jobtypes.Metrics{
+		Metrics: []job.Metrics{
 			{
 				Name:     "mysql_basic_info",
 				Priority: 0,
@@ -153,13 +153,13 @@ func createManagerJDBCTask() *jobtypes.Job {
 				Port:     "3306",
 				Timeout:  "15s",
 				Interval: 30,
-				Fields: []jobtypes.Field{
+				Fields: []job.Field{
 					{Field: "database_name", Type: 1, Label: true},
 					{Field: "version", Type: 1, Label: false},
 					{Field: "uptime_seconds", Type: 0, Label: false},
 					{Field: "server_id", Type: 0, Label: false},
 				},
-				JDBC: &jobtypes.JDBCProtocol{
+				JDBC: &job.JDBCProtocol{
 					Host:      "localhost",
 					Port:      "3306",
 					Platform:  "mysql",
@@ -180,7 +180,7 @@ func createManagerJDBCTask() *jobtypes.Job {
 }
 
 // simulateManagerTasks 模拟Manager定期发送采集任务
-func simulateManagerTasks(ctx context.Context, collectServer *entrance.CollectServer, job *jobtypes.Job, log logger.Logger) {
+func simulateManagerTasks(ctx context.Context, collectServer *entrance.CollectServer, job *job.Job, log logger.Logger) {
 	log.Info("📡 开始模拟Manager任务调度", "jobId", job.ID, "interval", "60s")
 
 	// 创建任务响应监听器 (模拟发送结果回Manager)
@@ -251,7 +251,7 @@ func (mrs *ManagerResponseSimulator) Response(metricsData []interface{}) {
 
 	// 模拟处理每个采集指标的结果
 	for i, data := range metricsData {
-		if collectData, ok := data.(*jobtypes.CollectRepMetricsData); ok {
+		if collectData, ok := data.(*job.CollectRepMetricsData); ok {
 			mrs.logger.Info("📊 处理采集指标",
 				"metricIndex", i+1,
 				"metricName", collectData.Metrics,

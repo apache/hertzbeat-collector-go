@@ -15,19 +15,44 @@
 // specific language governing permissions and limitations
 // under the License.
 
-package main
+package protocol
 
 import (
-	"fmt"
-	"os"
+	"errors"
 
-	"hertzbeat.apache.org/hertzbeat-collector-go/cmd/collector/root"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
-func main() {
+var (
+	ErrorInvalidPathPrefix = errors.New("invalid path prefix")
+)
 
-	if err := root.GetRootCommand().Execute(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+type ZookeeperSdProtocol struct {
+	URL        string
+	PathPrefix string
+
+	logger logger.Logger
+}
+
+func NewZookeeperSdProtocol(url, pathPrefix string, logger logger.Logger) *ZookeeperSdProtocol {
+
+	return &ZookeeperSdProtocol{
+		URL:        url,
+		PathPrefix: pathPrefix,
+		logger:     logger,
 	}
+}
+
+func (zp *ZookeeperSdProtocol) IsInvalid() error {
+
+	if zp.URL == "" {
+		zp.logger.Error(ErrorInvalidURL, "zk sd protocol host is empty")
+		return ErrorInvalidURL
+	}
+	if zp.PathPrefix == "" {
+		zp.logger.Error(ErrorInvalidPathPrefix, "zk sd protocol port is empty")
+		return ErrorInvalidPathPrefix
+	}
+
+	return nil
 }
