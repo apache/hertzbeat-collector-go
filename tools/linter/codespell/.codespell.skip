@@ -1,0 +1,4 @@
+.git
+.idea
+./tools/venv
+./vendor

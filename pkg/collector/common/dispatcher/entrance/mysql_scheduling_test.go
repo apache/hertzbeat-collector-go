@@ -98,10 +98,10 @@ func testMockCyclicJob(t *testing.T, service *CollectJobService, log logger.Logg
 	job := createMySQLCyclicJob()
 
 	// Mock Manager sending ISSUE_CYCLIC_TASK message
-	message := &api.Message{
+	message := &cluster_msg.Message{
 		Identity:  "test-manager",
-		Direction: api.Direction_REQUEST,
-		Type:      api.MessageType_ISSUE_CYCLIC_TASK,
+		Direction: cluster_msg.Direction_REQUEST,
+		Type:      cluster_msg.MessageType_ISSUE_CYCLIC_TASK,
 		Msg:       serializeJob(t, job),
 	}
 
@@ -122,10 +122,10 @@ func testMockCyclicJob(t *testing.T, service *CollectJobService, log logger.Logg
 	time.Sleep(8 * time.Second)
 
 	// Mock Manager canceling the job
-	cancelMessage := &api.Message{
+	cancelMessage := &cluster_msg.Message{
 		Identity:  "test-manager",
-		Direction: api.Direction_REQUEST,
-		Type:      api.MessageType_DELETE_CYCLIC_TASK,
+		Direction: cluster_msg.Direction_REQUEST,
+		Type:      cluster_msg.MessageType_DELETE_CYCLIC_TASK,
 		Msg:       serializeJobCancel(t, job.ID),
 	}
 
@@ -146,10 +146,10 @@ func testMockOneTimeJob(t *testing.T, service *CollectJobService, log logger.Log
 	job := createMySQLOneTimeJob()
 
 	// Mock Manager sending ISSUE_ONE_TIME_TASK message
-	message := &api.Message{
+	message := &cluster_msg.Message{
 		Identity:  "test-manager",
-		Direction: api.Direction_REQUEST,
-		Type:      api.MessageType_ISSUE_ONE_TIME_TASK,
+		Direction: cluster_msg.Direction_REQUEST,
+		Type:      cluster_msg.MessageType_ISSUE_ONE_TIME_TASK,
 		Msg:       serializeJob(t, job),
 	}
 

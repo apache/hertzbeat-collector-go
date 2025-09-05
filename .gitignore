@@ -21,13 +21,14 @@ tools/vagrant/.vagrant/
 *~
 # python artifacts
 *.pyc
+**/*.venv
 
 # lint
 lintconfig.gen.json
 
 *.orig
 
-bin/*
+**/bin/*
 
 LICENSES.txt
 

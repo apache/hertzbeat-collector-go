@@ -53,11 +53,11 @@ github:
         dismiss_stale_reviews: true
         required_approving_review_count: 1
   # enable GitHub Dependabot to create PRs for security alerts but not for every dependency update
-  dependabot_alerts:  true
+  dependabot_alerts: true
   dependabot_updates: false
 notifications:
   commits: notifications@hertzbeat.apache.org
   issues: notifications@hertzbeat.apache.org
   pullrequests: notifications@hertzbeat.apache.org
   jobs: notifications@hertzbeat.apache.org
-  discussions:  dev@hertzbeat.apache.org
+  discussions: dev@hertzbeat.apache.org

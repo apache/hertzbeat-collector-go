@@ -1,0 +1,130 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+---
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - zz_generated
+  settings:
+    gci:
+      sections:
+        # Captures all standard packages if they do not match another section.
+        - standard
+        # Contains all imports that could not be matched to another section type.
+        - default
+        # Groups all imports with the specified Prefix.
+        - prefix(hertzbeat.apache.org/hertzbeat-collector-go)
+    gofmt:
+      simplify: true
+    gofumpt:
+      extra-rules: true
+    goimports:
+      # put imports beginning with prefix after 3rd-party packages;
+      # it's a comma-separated list of prefixes
+      local-prefixes:
+        - hertzbeat.apache.org/hertzbeat-collector-go
+issues:
+  # Show the complete output
+  max-issues-per-linter: 0
+  max-same-issues: 0
+linters:
+  enable:
+    - bodyclose
+    - copyloopvar
+    - depguard
+    - errorlint
+    - gocritic
+    - goheader
+    - gosec
+    - importas
+    - misspell
+    - revive
+    - staticcheck
+    - testifylint
+    - unconvert
+    - unparam
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - staticcheck
+        text: 'SA1019:'
+  settings:
+    copyloopvar:
+      check-alias: true
+    depguard:
+      rules:
+        Main:
+          deny:
+            - pkg: github.com/gogo/protobuf
+              desc: "gogo/protobuf is deprecated, use golang/protobuf"
+            - pkg: gopkg.in/yaml.v2
+              desc: "use sigs.k8s.io/yaml instead"
+            - pkg: gopkg.in/yaml.v3
+              desc: "use sigs.k8s.io/yaml instead"
+            - pkg: k8s.io/utils/pointer
+              desc: "use k8s.io/utils/ptr instead"
+            - pkg: github.com/tetratelabs/multierror
+              desc: "use errors instead"
+            - pkg: github.com/hashicorp/go-multierror
+              desc: "use errors instead"
+    gosec:
+      excludes:
+        - G115
+    govet:
+      disable:
+        - shadow
+        - fieldalignment
+      enable-all: true
+      # Do not allow unaliased imports of aliased packages.
+      no-unaliased: true
+      # Do not allow non-required aliases.
+      no-extra-aliases: false
+    revive:
+      # TODO: enable if-return check
+      rules:
+        - name: if-return
+          disabled: true
+    staticcheck:
+      checks:
+        - all
+        - -QF1006
+        - -ST1005
+    testifylint:
+      disable:
+        - float-compare
+        - go-require
+      enable-all: true
+    unparam:
+      check-exported: false
+output:
+  show-stats: false
+run:
+  timeout: 10m
+version: "2"
