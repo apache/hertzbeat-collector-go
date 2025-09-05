@@ -24,22 +24,27 @@ GIT_COMMIT:=$(shell git rev-parse HEAD)
 
 ##@ Golang
 
-.PHONY:
+.PHONY: fmt
 fmt: ## Golang fmt
 	go fmt ./...
 
-.PHONY:
+.PHONY: vet
 vet: ## Golang vet
 	go vet ./...
 
-.PHONY:
+.PHONY: dev
 dev: ## Golang dev, run main by run.
-	go run ./cmd/main.go
+	go run cmd/main.go server --config etc/hertzbeat-collector.yaml
+
+.PHONY: prod
+prod: ## Golang prod, run bin by run.
+	bin/collector server --config etc/hertzbeat-collector.yaml
 
 .PHONY: build
 # build
 build: ## Golang build
 	@version=$$(cat VERSION); \
+	# todo; 添加交叉编译支持
 	CGO_ENABLED=0 go build -o bin/collector -ldflags "$(GO_LDFLAGS)" cmd/main.go
 
 .PHONY: init
@@ -69,4 +74,4 @@ test: ## run golang test
 
 .PHONY: golang-all
 golang-all: ## run fmt lint vet build api test
-golang-all: fmt lint vet build api test
+golang-all: fmt go-lint vet build api test

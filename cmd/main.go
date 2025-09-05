@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"os"
 
-	"hertzbeat.apache.org/hertzbeat-collector-go/cmd/collector/root"
+	"hertzbeat.apache.org/hertzbeat-collector-go/cmd/root"
 )
 
 func main() {

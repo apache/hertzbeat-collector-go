@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"collector-go/internal/cmd/version"
-
 	"github.com/spf13/cobra"
+
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/cmd/version"
 )
 
 func VersionCommand() *cobra.Command {

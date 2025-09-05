@@ -2,8 +2,7 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types"
+	"io"
 	"os"
 	"os/signal"
 	"sync"
@@ -11,17 +10,21 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"collector-go/internal/collector/common/config"
-	"collector-go/internal/collector/common/job"
-	clrServer "collector-go/internal/collector/common/server"
-	"collector-go/internal/collector/common/transport"
+	bannerouter "hertzbeat.apache.org/hertzbeat-collector-go/internal/banner"
+	jobserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/job"
+	clrServer "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
+	transportserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/transport"
+	collectortypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/collector"
+	configtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/config"
+	collectorerr "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/err"
+	cfgloader "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
 )
 
 var (
 	cfgPath string
 )
 
-type Runner[I types.Info] interface {
+type Runner[I collectortypes.Info] interface {
 	Start(ctx context.Context) error
 	Info() I
 	Close() error
@@ -34,67 +37,73 @@ func ServerCommand() *cobra.Command {
 		Aliases: []string{"server", "srv", "s"},
 		Short:   "Server Hertzbeat Collector Go",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return server(cmd.Context())
+			return server(cmd.Context(), cmd.OutOrStdout())
 		},
 	}
 
 	cmd.Flags().StringVarP(&cfgPath, "config", "c", "", "config file path")
-
 	return cmd
 }
 
-func getConfigByPath() (*config.Config, error) {
+func getConfigByPath() (*configtypes.CollectorConfig, error) {
 
-	cfgServer, err := config.New(cfgPath)
+	loader := cfgloader.New(cfgPath)
+	cfg, err := loader.LoadConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	cfg, err := cfgServer.Loader()
-	if err != nil {
+	if err := loader.ValidateConfig(cfg); err != nil {
 		return nil, err
 	}
 
 	return cfg, nil
 }
 
-func serverByCfg(cfg *config.Config) *clrServer.Server {
+func serverByCfg(cfg *configtypes.CollectorConfig, logOut io.Writer) *clrServer.Server {
 
-	return clrServer.New(cfg)
+	return clrServer.New(cfg, logOut)
 }
 
-func server(ctx context.Context) error {
+func server(ctx context.Context, logOut io.Writer) error {
+
 	cfg, err := getConfigByPath()
 	if err != nil {
-		return fmt.Errorf("failed to load config: %w", err)
+		return err
 	}
 
-	collectorServer := serverByCfg(cfg)
+	collectorServer := serverByCfg(cfg, logOut)
 
-	// 创建一个带取消的context
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// 启动runners并等待完成或错误
+	banner := bannerouter.New(&bannerouter.Config{
+		Server: *collectorServer,
+	})
+	err = banner.PrintBanner(cfg.Collector.Info.Name, cfg.Collector.Info.IP)
+	if err != nil {
+		return err
+	}
+
 	return startRunners(ctx, collectorServer)
 }
 
 func startRunners(ctx context.Context, cfg *clrServer.Server) error {
 
 	runners := []struct {
-		runner Runner[types.Info]
+		runner Runner[collectortypes.Info]
 	}{
 		{
-			job.New(&job.Config{
+			jobserver.New(&jobserver.Config{
 				Server: *cfg,
 			}),
 		},
 		{
-			transport.New(&transport.Config{
+			transportserver.New(&transportserver.Config{
 				Server: *cfg,
 			}),
 		},
-		// metrics
+		// todo; add metrics
 	}
 
 	errCh := make(chan error, len(runners))
@@ -103,10 +112,9 @@ func startRunners(ctx context.Context, cfg *clrServer.Server) error {
 
 	for _, r := range runners {
 		wg.Add(1)
-		go func(runner Runner[types.Info]) {
+		go func(runner Runner[collectortypes.Info]) {
 			defer wg.Done()
-			fmt.Printf("Starting runner: %s\n", runner.Info().Name)
-
+			cfg.Logger.Info("Starting runner", "runner component", runner.Info().Name)
 			if err := runner.Start(ctx); err != nil {
 				select {
 				case errCh <- err:
@@ -123,22 +131,23 @@ func startRunners(ctx context.Context, cfg *clrServer.Server) error {
 		signal.Stop(signalCh)
 		for _, r := range runners {
 			if err := r.runner.Close(); err != nil {
-				fmt.Printf("error closing runner %s: %v\n", r.runner.Info(), err)
+				cfg.Logger.Info("error closing runner %s: %v\n", r.runner.Info(), err)
 			}
 		}
 	}
 
 	select {
 	case <-ctx.Done():
-		fmt.Println("Context cancelled")
+		cfg.Logger.Info("Context cancelled")
 		cleanup()
 		return ctx.Err()
 	case sig := <-signalCh:
-		fmt.Printf("Received signal: %v\n", sig)
+		cfg.Logger.Info("Received signal: %v\n", sig)
 		cleanup()
 		return nil
 	case err := <-errCh:
 		cleanup()
-		return fmt.Errorf("runner error: %w", err)
+		cfg.Logger.Error(collectorerr.CollectorServerStop, "runner error", "error", err)
+		return err
 	}
 }

@@ -22,10 +22,21 @@ import (
 	"os"
 	"strconv"
 	"text/template"
+
+	clrServer "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
+	bannertypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/err"
 )
 
 //go:embed banner.txt
 var EmbedLogo embed.FS
+
+type Config struct {
+	clrServer.Server
+}
+
+type Runner struct {
+	Config
+}
 
 type bannerVars struct {
 	CollectorName string
@@ -33,16 +44,26 @@ type bannerVars struct {
 	Pid           string
 }
 
-func PrintBanner(appName, port string) error {
+func New(srv *Config) *Runner {
+
+	return &Runner{
+		Config: *srv,
+	}
+}
+
+func (r *Runner) PrintBanner(appName, port string) error {
+
+	r.Logger = r.Logger.WithName("banner").WithValues("runner", "banner")
 
 	data, err := EmbedLogo.ReadFile("banner.txt")
 	if err != nil {
-
+		r.Logger.Error(bannertypes.BannerPrintReaderError, "output banner read error", "error", err)
 		return err
 	}
 
 	tmpl, err := template.New("banner").Parse(string(data))
 	if err != nil {
+		r.Logger.Error(bannertypes.BannerPrintExecuteError, "template parse error", "error", err)
 		return err
 	}
 
@@ -54,6 +75,7 @@ func PrintBanner(appName, port string) error {
 
 	err = tmpl.Execute(os.Stdout, vars)
 	if err != nil {
+		r.Logger.Error(bannertypes.BannerPrintExecuteError, "template parse error", "error", err)
 		return err
 	}
 

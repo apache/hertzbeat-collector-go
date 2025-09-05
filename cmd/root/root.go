@@ -1,9 +1,9 @@
 package root
 
 import (
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/cmd"
-
 	"github.com/spf13/cobra"
+
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/cmd"
 )
 
 func GetRootCommand() *cobra.Command {
