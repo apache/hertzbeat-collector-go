@@ -47,21 +47,7 @@ jobs:
             style
           scopes: |
             core
-            vector-stores
-            document-readers
-            document-parsers
-            deepresearch
-            docs
-            memories
-            tool-calls
-            graph
-            jmanus
-            mcp
-            prompt
-            studio
-            autoconf
             ci
-            nl2sql
             community
           # e.g. feat(core): add new feature
           # if false: feat: add new feature
