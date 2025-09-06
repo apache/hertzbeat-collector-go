@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
 )
 
 func TestZapLogLevel(t *testing.T) {
@@ -43,17 +43,17 @@ func TestZapLogLevel(t *testing.T) {
 }
 
 func TestLogger(t *testing.T) {
-	logger := NewLogger(os.Stdout, logger.DefaultHertzbeatLogging())
+	logger := NewLogger(os.Stdout, loggertype.DefaultHertzbeatLogging())
 	logger.Info("kv msg", "key", "value")
 	logger.Sugar().Infof("template %s %d", "string", 123)
 
-	logger.WithName(string(logger.LogComponentHertzbeatCollector)).WithValues("runner", logger.LogComponentHertzbeatCollector).Info("msg", "k", "v")
+	logger.WithName(string(loggertype.LogComponentHertzbeatCollector)).WithValues("runner", loggertype.LogComponentHertzbeatCollector).Info("msg", "k", "v")
 
-	defaultLogger := DefaultLogger(os.Stdout, logger.LogLevelInfo)
+	defaultLogger := DefaultLogger(os.Stdout, loggertype.LogLevelInfo)
 	assert.NotNil(t, defaultLogger.logging)
 	assert.NotNil(t, defaultLogger.sugaredLogger)
 
-	fileLogger := FileLogger("/dev/stderr", "fl-test", logger.LogLevelInfo)
+	fileLogger := FileLogger("/dev/stderr", "fl-test", loggertype.LogLevelInfo)
 	assert.NotNil(t, fileLogger.logging)
 	assert.NotNil(t, fileLogger.sugaredLogger)
 }
@@ -70,10 +70,10 @@ func TestLoggerWithName(t *testing.T) {
 		require.NoError(t, err)
 	}()
 
-	config := logger.DefaultHertzbeatLogging()
-	config.Level[logger.LogComponentHertzbeatCollector] = logger.LogLevelDebug
+	config := loggertype.DefaultHertzbeatLogging()
+	config.Level[loggertype.LogComponentHertzbeatCollector] = loggertype.LogLevelDebug
 
-	logger := NewLogger(os.Stdout, config).WithName(string(logger.LogComponentHertzbeatCollector))
+	logger := NewLogger(os.Stdout, config).WithName(string(loggertype.LogComponentHertzbeatCollector))
 	logger.Info("info message")
 	logger.Sugar().Debugf("debug message")
 
@@ -82,7 +82,7 @@ func TestLoggerWithName(t *testing.T) {
 	_, err := r.Read(outputBytes)
 	require.NoError(t, err)
 	capturedOutput := string(outputBytes)
-	assert.Contains(t, capturedOutput, string(logger.LogComponentHertzbeatCollector))
+	assert.Contains(t, capturedOutput, string(loggertype.LogComponentHertzbeatCollector))
 	assert.Contains(t, capturedOutput, "info message")
 	assert.Contains(t, capturedOutput, "debug message")
 }
@@ -101,8 +101,8 @@ func TestLoggerSugarName(t *testing.T) {
 
 	const logName = "loggerName"
 
-	config := logger.DefaultHertzbeatLogging()
-	config.Level[logName] = logger.LogLevelDebug
+	config := loggertype.DefaultHertzbeatLogging()
+	config.Level[logName] = loggertype.LogLevelDebug
 
 	logger := NewLogger(os.Stdout, config).WithName(logName)
 
