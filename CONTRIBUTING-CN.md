@@ -1,8 +1,6 @@
-# 贡献者指南 
+# 贡献者指南
 
-> 我们致力于维护一个互帮互助、快乐的社区，欢迎每一位贡献者加入！
-
-### 贡献方式
+## 贡献方式
 
 > 在 HertzBeat 社区，贡献方式有很多：
 
@@ -18,12 +16,12 @@
 
 即便是小到错别字的修正我们也非常欢迎 :)
 
-### 让 HertzBeat 跑起来
+## 让 HertzBeat 跑起来
 
 > 让 HertzBeat 代码在你的开发环境中运行，并支持断点调试。
 > 本项目前后端分离，需分别启动后端 [manager](manager) 和前端 [web-app](web-app)。
 
-#### 后端启动
+### 后端启动
 
 1. 需要 `maven3+`、`java17` 和 `lombok` 环境
 2. （可选）修改配置文件：`manager/src/main/resources/application.yml`
@@ -31,7 +29,7 @@
 4. JVM 参数加入：`--add-opens=java.base/java.nio=org.apache.arrow.memory.core,ALL-UNNAMED`
 5. 启动 `springboot manager` 服务：`manager/src/main/java/org/apache/hertzbeat/hertzbeat-manager/Manager.java`
 
-#### 前端启动
+### 前端启动
 
 1. 需要 `Node.js` 和 `yarn` 环境，Node.js >= 18
 2. 进入 `web-app` 目录：`cd web-app`
@@ -41,13 +39,13 @@
 6. 后端启动后，在 web-app 目录下启动前端：`ng serve --open`
 7. 浏览器访问 localhost:4200，默认账号/密码：_admin/hertzbeat_
 
-### 寻找任务
+## 寻找任务
 
 在 GitHub issue 列表和邮件列表中查找感兴趣的任务，带有 good first issue 或 status: volunteer wanted 标签的 issue 欢迎新手参与。
 
 如有新想法，也可在 GitHub Discussion 提出或联系社区。
 
-### 提交 Pull Request
+## 提交 Pull Request
 
 1. Fork 目标仓库 [hertzbeat repository](https://github.com/apache/hertzbeat)
 2. 用 git 下载代码：
@@ -80,7 +78,7 @@
 
 PR 标题需符合规范，并写明必要说明，便于代码审查。
 
-### 等待 PR 合并
+## 等待 PR 合并
 
 PR 提交后，Committer 或社区成员会进行代码审查（Code Review），并提出修改建议或讨论。请及时关注你的 PR。
 
@@ -90,7 +88,7 @@ PR 提交后，Committer 或社区成员会进行代码审查（Code Review）�
 
 最终 Committer 会将 PR 合并到主分支。
 
-### 代码合并后
+## 代码合并后
 
 合并后可删除本地和远程开发分支：
 
@@ -107,15 +105,15 @@ git checkout master
 git pull upstream master
 ```
 
-### HertzBeat 改进提案（HIP）
+## HertzBeat 改进提案（HIP）
 
 如有重大新特性（如支持指标推送网关、日志监控等），需编写 HertzBeat 改进提案（HIP），流程见 [HertzBeat hip](https://github.com/apache/hertzbeat/tree/master/hip)。
 
-### 如何成为 Committer？
+## 如何成为 Committer？
 
 重复上述流程，持续活跃贡献，你就有机会成为 Committer！
 
-### 加入讨论交流
+## 加入讨论交流
 
 [加入邮件列表](https://lists.apache.org/list.html?dev@hertzbeat.apache.org)：发送邮件至 `dev-subscribe@hertzbeat.apache.org` 订阅。
 
