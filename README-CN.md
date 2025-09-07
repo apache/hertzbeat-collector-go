@@ -14,7 +14,7 @@ HertzBeat-Collector-Go 是 [Apache HertzBeat](https://github.com/apache/hertzbea
 
 ## 📂 目录结构
 
-```
+```text
 .
 ├── cmd/                # 主程序入口
 ├── internal/           # 采集器核心实现与通用组件

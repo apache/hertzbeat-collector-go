@@ -15,39 +15,49 @@
 # specific language governing permissions and limitations
 # under the License.
 
+FROM golang:1.23-alpine AS golang-builder
 
-# syntax=docker/dockerfile:1
+ARG GOPROXY
+# ENV GOPROXY ${GOPROXY:-direct}
+# ENV GOPROXY=https://proxy.golang.com.cn,direct
 
-# Build stage
-FROM golang:1.24-alpine AS builder
+ENV GOPATH /go
+ENV GOROOT /usr/local/go
+ENV PACKAGE hertzbeat.apache.org/hertzbeat-collector-go
+ENV BUILD_DIR /app
 
-WORKDIR /app
+COPY . ${BUILD_DIR}
+WORKDIR ${BUILD_DIR}
+RUN apk --no-cache add build-base git bash
 
-# 安装 git 以支持 go mod 下载私有依赖（如有需要）
-RUN apk add --no-cache git
+RUN make init && \
+    make fmt && \
+    make go-lint &&\
+    make build
 
-# 复制 go.mod 和 go.sum 并下载依赖
-COPY go.mod go.sum ./
-RUN go mod download
+RUN chmod +x bin/collector
 
-# 复制源代码
-COPY . .
+FROM alpine
 
-# 构建二进制文件
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o collector ./cmd/main.go
+ARG TIMEZONE
+ENV TIMEZONE=${TIMEZONE:-"Asia/Shanghai"}
 
-# Production stage
-FROM alpine:3.19
+RUN apk update \
+    && apk --no-cache add \
+        bash \
+        ca-certificates \
+        curl \
+        dumb-init \
+        gettext \
+        openssh \
+        sqlite \
+        gnupg \
+        tzdata \
+    && ln -sf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
+    && echo "${TIMEZONE}" > /etc/timezone
 
-WORKDIR /app
+COPY --from=golang-builder /app/bin/collector /usr/local/bin/collector
+COPY --from=golang-builder /app/etc/hertzbeat-collector.yml /etc/hertzbeat-collector.yml
 
-# 拷贝构建产物
-COPY --from=builder /app/collector /app/collector
-
-# 如有配置文件等需要一并拷贝
-# COPY --from=builder /app/etc /app/etc
-
-# 暴露端口（如有需要）
-# EXPOSE 1158
-
-ENTRYPOINT ["./collector"]
+EXPOSE 8090
+ENTRYPOINT ["collector", "server", "--config", "/etc/hertzbeat-collector.yml"]
