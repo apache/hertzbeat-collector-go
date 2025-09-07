@@ -21,11 +21,11 @@ Go 代码应该以最简单的方式编写，以实现其目标，无论是在�
 - https://google.github.io/styleguide/go/
 - https://go.dev/doc/effective_go
 
-#### 1. gofmt 统一代码格式
+## 1. gofmt 统一代码格式
 
-执行 `go fmt ./... `来统一代码格式。
+执行 `go fmt ./...`来统一代码格式。
 
-#### 2. 注释说明增强
+## 2. 注释说明增强
 
 在会引发歧义或者和上文判断不同时使用注释以提醒开发者。
 
@@ -39,7 +39,7 @@ if err := doSomething(); err == nil { // if NO error
 }
 ```
 
-#### 3. 注释应该说明的是”为什么“，而不是”做什么“
+## 3. 注释应该说明的是”为什么“，而不是”做什么“
 
 ```go
 // ❌ Bad
@@ -51,7 +51,7 @@ i = i + 1
 i++
 ```
 
-#### 4. 当有 context.Context 参数时，其永远是方法的第一个参数并且不被放在结构体中
+## 4. 当有 context.Context 参数时，其永远是方法的第一个参数并且不被放在结构体中
 
 ```golang
 // ❌ Bad
@@ -74,7 +74,7 @@ func (s *ServerContext) doSomething(ctx context.Context, param any) {
 }
 ```
 
-#### 5. 正确声明变量
+## 5. 正确声明变量
 
 ```golang
 // ❌ Bad
@@ -92,7 +92,7 @@ i := 42
 
 在使用非零值初始化时，使用  `:=` 赋值。
 
-#### 6. 代码中不要出现 panic
+## 6. 代码中不要出现 panic
 
 ```golang
 // ❌ Bad
@@ -115,7 +115,7 @@ func Parse(file *os.File, cfg any) error {
 
 依赖库应该优先返回 err，而不是终止程序。
 
-#### 7. 保持错误信息干净，使用结构化日志
+## 7. 保持错误信息干净，使用结构化日志
 
 ```golang
 // ❌ Bad
@@ -127,7 +127,7 @@ return fmt.Errorf("some error.")
 
 error msg 小写开头且不以任何标点结尾。
 
-#### 8. 避免多余的 else 逻辑
+## 8. 避免多余的 else 逻辑
 
 ```golang
 // ❌ Bad
@@ -148,13 +148,13 @@ doSomething()
 
 尽早返回 error 且避免多余的 else 语句。
 
-#### 9. 使用包别名导入
+## 9. 使用包别名导入
 
 除非为了避免名称冲突，否则应避免重命名导入；好的包名称不应该需要重命名。如果发生冲突，优先重命名本地或项目特定的导入。
 
 import pkg 按组组织，每组之间以空行分隔。标准库包始终位于第一组，其次是第三方包，最后是项目内部包。
 
-#### 10. 缩写保持大写和官方库一致
+## 10. 缩写保持大写和官方库一致
 
 ```golang
 // ❌ Bad
@@ -166,7 +166,7 @@ type HTTPServer struct{}
 
 标准库写法：HTTP、ID、JSON。保持一致性.
 
-#### 11. 避免裸返回
+## 11. 避免裸返回
 
 ```golang
 // ❌ Bad
@@ -183,7 +183,7 @@ func sum(a, b int) int {
 
 除非函数非常短，一眼看到底时使用裸返回。
 
-#### 12. 包名、接受者名保持简单与简洁切避免函数名重复与啰嗦
+## 12. 包名、接受者名保持简单与简洁切避免函数名重复与啰嗦
 
 ```golang
 // ❌ Bad
@@ -228,7 +228,7 @@ func (c *Config) WriteTextTo(w io.Writer) (int64, error)
 func (c *Config) WriteBinaryTo(w io.Writer) (int64, error)
 ```
 
-#### 13. 函数名中不应出现返回类型且命名体现语义
+## 13. 函数名中不应出现返回类型且命名体现语义
 
 ```golang
 // ❌ Bad
@@ -249,7 +249,7 @@ func ProcessData(data []byte) error
 
 动作用动词，取值用名词且返回值函数中不要动词。
 
-#### 14. 测试写法符合 Go `got %v, want %v`风格
+## 14. 测试写法符合 Go `got %v, want %v`风格
 
 ```golang
 // ❌ Bad
@@ -263,7 +263,7 @@ if got != want {
 }
 ```
 
-#### 15. 常量与结构化错误声明
+## 15. 常量与结构化错误声明
 
 ```golang
 type Animal string
@@ -292,68 +292,68 @@ func process(animal Animal) error {
 
 在使用到常量定义或者错误时，将其机构化定义在文件顶部或统一管理。
 
-#### 16. 当函数参数列表过多时，使用可变参数处理输入
+## 16. 当函数参数列表过多时，使用可变参数处理输入
 
 ```golang
 type SshProtocol struct {
-	Host                 string
-	Port                 string
-	Timeout              string
-	Username             string
-	Password             string
-	PrivateKey           string
-	PrivateKeyPassphrase string
-	ReuseConnection      string
-	Script               string
-	ParseType            string
-	ProxyHost            string
-	ProxyPort            string
-	ProxyUsername        string
-	ProxyPassword        string
-	UseProxy             string
-	ProxyPrivateKey      string
+ Host                 string
+ Port                 string
+ Timeout              string
+ Username             string
+ Password             string
+ PrivateKey           string
+ PrivateKeyPassphrase string
+ ReuseConnection      string
+ Script               string
+ ParseType            string
+ ProxyHost            string
+ ProxyPort            string
+ ProxyUsername        string
+ ProxyPassword        string
+ UseProxy             string
+ ProxyPrivateKey      string
 }
 
 type SshProtocolConfigOptFunc func(option *SshProtocol)
 
 func NewSshProtocol(host, port string, opts ...SshProtocolConfigOptFunc) *SshProtocol {
 
-	option := &SshProtocol{
-		Host: host,
-		Port: port,
-	}
+ option := &SshProtocol{
+  Host: host,
+  Port: port,
+ }
 
-	for _, opt := range opts {
-		opt(option)
-	}
+ for _, opt := range opts {
+  opt(option)
+ }
 
-	return &SshProtocol{
-		Host:                 host,
-		Port:                 port,
-		Timeout:              option.Timeout,
-		Username:             option.Username,
-		Password:             option.Password,
-		PrivateKey:           option.PrivateKey,
-		PrivateKeyPassphrase: option.PrivateKeyPassphrase,
-		ReuseConnection:      option.ReuseConnection,
-		Script:               option.Script,
-		ParseType:            option.ParseType,
-		ProxyHost:            option.ProxyHost,
-		ProxyPort:            option.ProxyPort,
-		ProxyUsername:        option.ProxyUsername,
-		ProxyPassword:        option.ProxyPassword,
-		UseProxy:             option.UseProxy,
-		ProxyPrivateKey:      option.ProxyPrivateKey,
-	}
+ return &SshProtocol{
+  Host:                 host,
+  Port:                 port,
+  Timeout:              option.Timeout,
+  Username:             option.Username,
+  Password:             option.Password,
+  PrivateKey:           option.PrivateKey,
+  PrivateKeyPassphrase: option.PrivateKeyPassphrase,
+  ReuseConnection:      option.ReuseConnection,
+  Script:               option.Script,
+  ParseType:            option.ParseType,
+  ProxyHost:            option.ProxyHost,
+  ProxyPort:            option.ProxyPort,
+  ProxyUsername:        option.ProxyUsername,
+  ProxyPassword:        option.ProxyPassword,
+  UseProxy:             option.UseProxy,
+  ProxyPrivateKey:      option.ProxyPrivateKey,
+ }
 }
 
 func (sp *SshProtocol) IsInvalid() error {
 
-	return nil
+ return nil
 }
 ```
 
-#### 17. 字符串拼接
+## 17. 字符串拼接
 
 ```golang
 // 连接少量字符时使用 + 
