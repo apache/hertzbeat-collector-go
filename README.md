@@ -36,7 +36,7 @@ HertzBeat-Collector-Go is the Go implementation of the collector for [Apache Her
 
 ```bash
 # Install dependencies
-
+go mod tidy
 
 # Build
 make build
