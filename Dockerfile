@@ -15,4 +15,49 @@
 # specific language governing permissions and limitations
 # under the License.
 
-From golang:1.24-alpine
+FROM golang:1.23-alpine AS golang-builder
+
+ARG GOPROXY
+# ENV GOPROXY ${GOPROXY:-direct}
+# ENV GOPROXY=https://proxy.golang.com.cn,direct
+
+ENV GOPATH /go
+ENV GOROOT /usr/local/go
+ENV PACKAGE hertzbeat.apache.org/hertzbeat-collector-go
+ENV BUILD_DIR /app
+
+COPY . ${BUILD_DIR}
+WORKDIR ${BUILD_DIR}
+RUN apk --no-cache add build-base git bash
+
+RUN make init && \
+    make fmt && \
+    make go-lint &&\
+    make build
+
+RUN chmod +x bin/collector
+
+FROM alpine
+
+ARG TIMEZONE
+ENV TIMEZONE=${TIMEZONE:-"Asia/Shanghai"}
+
+RUN apk update \
+    && apk --no-cache add \
+        bash \
+        ca-certificates \
+        curl \
+        dumb-init \
+        gettext \
+        openssh \
+        sqlite \
+        gnupg \
+        tzdata \
+    && ln -sf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
+    && echo "${TIMEZONE}" > /etc/timezone
+
+COPY --from=golang-builder /app/bin/collector /usr/local/bin/collector
+COPY --from=golang-builder /app/etc/hertzbeat-collector.yml /etc/hertzbeat-collector.yml
+
+EXPOSE 8090
+ENTRYPOINT ["collector", "server", "--config", "/etc/hertzbeat-collector.yml"]

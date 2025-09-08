@@ -16,24 +16,17 @@
 # under the License.
 
 services:
-  # collector service
+
+  # collector go service
   hertzbeat-collector:
-    image: hertzbeat/hertzbeat-collector:latest
-    container_name: hertzbeat-collector
-    restart: always
+    image: hertzbeat/hertzbeat-collector-go:latest
+    container_name: hertzbeat-collector-go
+    restart: on-failure
     ports:
-      - "8080:8080" # Web access port
-      - "8091:8091" # Agent communication port
-    environment:
-      - TZ=Asia/Shanghai # Set your timezone
-      - JAVA_OPTS=-Xms512m -Xmx1024m -XX:+UseG1GC # Java memory settings
-      - SPRING_PROFILES_ACTIVE=prod # Active profile (prod or dev)
-      - HERTZBEAT_DB_HOST=db # Database host (use 'db' if using the db service below)
-      - HERTZBEAT_DB_PORT=3306 # Database port
-      - HERTZBEAT_DB_NAME=hertzbeat # Database name
-      - HERTZBEAT_DB_USER=root # Database user
-      - HERTZBEAT_DB_PASSWORD=yourpassword # Database password, change this to a secure password
-    depends_on:
-      - db # Ensure the database service starts before the collector
-    volumes:
-      - hertzbeat_data:/opt/hertzbeat/data # Persist data
+      - "8090:8090"
+    networks:
+      hcg-network:
+
+networks:
+  hcg-network:
+    driver: bridge
