@@ -76,6 +76,15 @@ func InitializeCollectors(logger logger.Logger) {
 	}
 
 	globalRegistry.initialized = true
+
+	// Log initialization results
+	protocols := make([]string, 0, len(globalRegistry.collectors))
+	for protocol := range globalRegistry.collectors {
+		protocols = append(protocols, protocol)
+	}
+	logger.Info("collectors initialized from factories",
+		"protocols", protocols,
+		"count", len(protocols))
 }
 
 // Register a collector directly (legacy method, kept for compatibility)
