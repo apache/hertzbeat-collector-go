@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/cobra"
 
 	bannerouter "hertzbeat.apache.org/hertzbeat-collector-go/internal/banner"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic"
 	jobserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/job"
 	clrServer "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
 	transportserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/transport"
@@ -108,6 +109,11 @@ func server(ctx context.Context, logOut io.Writer) error {
 }
 
 func startRunners(ctx context.Context, cfg *clrServer.Server) error {
+
+	// Initialize all collectors before starting runners
+	// This ensures all protocol collectors are registered and ready
+	cfg.Logger.Info("Initializing collectors...")
+	basic.InitializeAllCollectors(cfg.Logger)
 
 	runners := []struct {
 		runner Runner[collectortypes.Info]

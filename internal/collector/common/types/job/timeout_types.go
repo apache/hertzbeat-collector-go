@@ -79,22 +79,22 @@ func (t *Timeout) Context() context.Context {
 	return t.ctx
 }
 
-// SetWheelIndex sets the wheel index for internal use
+// SetWheelIndex sets the wheel index for this timeout
 func (t *Timeout) SetWheelIndex(index int) {
 	t.wheelIndex = index
 }
 
-// GetWheelIndex gets the wheel index
-func (t *Timeout) GetWheelIndex() int {
-	return t.wheelIndex
-}
-
-// SetBucketIndex sets the bucket index for internal use
+// SetBucketIndex sets the bucket index for this timeout
 func (t *Timeout) SetBucketIndex(index int) {
 	t.bucketIndex = index
 }
 
-// GetBucketIndex gets the bucket index
-func (t *Timeout) GetBucketIndex() int {
+// WheelIndex returns the wheel index
+func (t *Timeout) WheelIndex() int {
+	return t.wheelIndex
+}
+
+// BucketIndex returns the bucket index
+func (t *Timeout) BucketIndex() int {
 	return t.bucketIndex
 }

@@ -50,10 +50,10 @@ type Job struct {
 	ResponseDataTemp []MetricsData        `json:"-"`
 }
 
-// GetNextCollectMetrics returns the metrics that should be collected next
+// NextCollectMetrics returns the metrics that should be collected next
 // This is a simplified version - in the full implementation this would handle
 // metric priorities, dependencies, and collection levels
-func (j *Job) GetNextCollectMetrics() []*Metrics {
+func (j *Job) NextCollectMetrics() []*Metrics {
 	result := make([]*Metrics, 0, len(j.Metrics))
 	for i := range j.Metrics {
 		result = append(result, &j.Metrics[i])
