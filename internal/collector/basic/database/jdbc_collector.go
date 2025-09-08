@@ -30,8 +30,6 @@ import (
 	_ "github.com/microsoft/go-mssqldb"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
-
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic"
 )
 
 const (
@@ -59,13 +57,13 @@ const (
 
 // JDBCCollector implements JDBC database collection
 type JDBCCollector struct {
-	*basic.BaseCollector
+	logger logger.Logger
 }
 
 // NewJDBCCollector creates a new JDBC collector
 func NewJDBCCollector(logger logger.Logger) *JDBCCollector {
 	return &JDBCCollector{
-		BaseCollector: basic.NewBaseCollector(logger.WithName("jdbc-collector")),
+		logger: logger.WithName("jdbc-collector"),
 	}
 }
 
@@ -127,7 +125,7 @@ func (jc *JDBCCollector) Collect(metrics *jobtypes.Metrics) *jobtypes.CollectRep
 	startTime := time.Now()
 	jdbc := metrics.JDBC
 
-	jc.Logger.Info("starting JDBC collection",
+	jc.logger.Info("starting JDBC collection",
 		"host", jdbc.Host,
 		"port", jdbc.Port,
 		"platform", jdbc.Platform,
@@ -140,20 +138,20 @@ func (jc *JDBCCollector) Collect(metrics *jobtypes.Metrics) *jobtypes.CollectRep
 	// Get database URL
 	databaseURL, err := jc.constructDatabaseURL(jdbc)
 	if err != nil {
-		jc.Logger.Error(err, "failed to construct database URL")
-		return jc.CreateFailResponse(metrics, CodeFail, fmt.Sprintf("Database URL error: %v", err))
+		jc.logger.Error(err, "failed to construct database URL")
+		return jc.createFailResponse(metrics, CodeFail, fmt.Sprintf("Database URL error: %v", err))
 	}
 
 	// Create database connection
 	db, err := jc.getConnection(databaseURL, jdbc.Username, jdbc.Password, timeout)
 	if err != nil {
-		jc.Logger.Error(err, "failed to connect to database")
-		return jc.CreateFailResponse(metrics, CodeUnConnectable, fmt.Sprintf("Connection error: %v", err))
+		jc.logger.Error(err, "failed to connect to database")
+		return jc.createFailResponse(metrics, CodeUnConnectable, fmt.Sprintf("Connection error: %v", err))
 	}
 	defer db.Close()
 
 	// Execute query based on type with context
-	response := jc.CreateSuccessResponse(metrics)
+	response := jc.createSuccessResponse(metrics)
 
 	switch jdbc.QueryType {
 	case QueryTypeOneRow:
@@ -169,20 +167,20 @@ func (jc *JDBCCollector) Collect(metrics *jobtypes.Metrics) *jobtypes.CollectRep
 	}
 
 	if err != nil {
-		jc.Logger.Error(err, "query execution failed", "queryType", jdbc.QueryType)
-		return jc.CreateFailResponse(metrics, CodeFail, fmt.Sprintf("Query error: %v", err))
+		jc.logger.Error(err, "query execution failed", "queryType", jdbc.QueryType)
+		return jc.createFailResponse(metrics, CodeFail, fmt.Sprintf("Query error: %v", err))
 	}
 
 	duration := time.Since(startTime)
-	jc.Logger.Info("JDBC collection completed",
+	jc.logger.Info("JDBC collection completed",
 		"duration", duration,
 		"rowCount", len(response.Values))
 
 	return response
 }
 
-// SupportProtocol returns the protocol this collector supports
-func (jc *JDBCCollector) SupportProtocol() string {
+// Protocol returns the protocol this collector supports
+func (jc *JDBCCollector) Protocol() string {
 	return ProtocolJDBC
 }
 
@@ -467,6 +465,42 @@ func (jc *JDBCCollector) queryColumns(db *sql.DB, sqlQuery string, aliasFields [
 // runScript executes a SQL script (placeholder implementation)
 func (jc *JDBCCollector) runScript(db *sql.DB, scriptPath string, response *jobtypes.CollectRepMetricsData) error {
 	// For security reasons, we'll just return success without actually running scripts
-	jc.Logger.Info("script execution requested but disabled for security", "scriptPath", scriptPath)
+	jc.logger.Info("script execution requested but disabled for security", "scriptPath", scriptPath)
 	return nil
+}
+
+// createSuccessResponse creates a successful metrics data response
+func (jc *JDBCCollector) createSuccessResponse(metrics *jobtypes.Metrics) *jobtypes.CollectRepMetricsData {
+	return &jobtypes.CollectRepMetricsData{
+		ID:        0,  // Will be set by the calling context
+		MonitorID: 0,  // Will be set by the calling context
+		App:       "", // Will be set by the calling context
+		Metrics:   metrics.Name,
+		Priority:  0,
+		Time:      time.Now().UnixMilli(),
+		Code:      200, // Success
+		Msg:       "success",
+		Fields:    make([]jobtypes.Field, 0),
+		Values:    make([]jobtypes.ValueRow, 0),
+		Labels:    make(map[string]string),
+		Metadata:  make(map[string]string),
+	}
+}
+
+// createFailResponse creates a failed metrics data response
+func (jc *JDBCCollector) createFailResponse(metrics *jobtypes.Metrics, code int, message string) *jobtypes.CollectRepMetricsData {
+	return &jobtypes.CollectRepMetricsData{
+		ID:        0,  // Will be set by the calling context
+		MonitorID: 0,  // Will be set by the calling context
+		App:       "", // Will be set by the calling context
+		Metrics:   metrics.Name,
+		Priority:  0,
+		Time:      time.Now().UnixMilli(),
+		Code:      code,
+		Msg:       message,
+		Fields:    make([]jobtypes.Field, 0),
+		Values:    make([]jobtypes.ValueRow, 0),
+		Labels:    make(map[string]string),
+		Metadata:  make(map[string]string),
+	}
 }

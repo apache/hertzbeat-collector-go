@@ -40,7 +40,6 @@ security/cmd/node_agent/na/pkey
 vendor
 # Contains the built artifacts
 out/
-etc/
 var/
 # Go compiled tests
 *.test

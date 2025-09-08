@@ -18,39 +18,103 @@
 package strategy
 
 import (
+	"fmt"
 	"sync"
+
+	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
-// AbstractCollect interface
-type AbstractCollect interface {
-	SupportProtocol() string
+// Collector interface defines the contract for all collectors
+type Collector interface {
+	// Collect performs the actual metrics collection
+	Collect(metrics *jobtypes.Metrics) *jobtypes.CollectRepMetricsData
+
+	// Protocol returns the protocol this collector supports
+	Protocol() string
 }
 
-// strategy container
-var (
-	collectStrategy = make(map[string]AbstractCollect)
-	mu              sync.RWMutex
-)
+// CollectorFactory is a function that creates a collector with a logger
+type CollectorFactory func(logger.Logger) Collector
 
-// Register a collect strategy
-// Example: registration in init() of each implementation file
-//
-//	func init() {
-//	    Register(&XXXCollect{})
-//	}
-func Register(collect AbstractCollect) {
-
-	mu.Lock()
-	defer mu.Unlock()
-
-	collectStrategy[collect.SupportProtocol()] = collect
+// CollectorRegistry manages all registered collector factories
+type CollectorRegistry struct {
+	factories   map[string]CollectorFactory
+	collectors  map[string]Collector
+	mu          sync.RWMutex
+	initialized bool
 }
 
-// Invoke returns the collect strategy for a protocol
-func Invoke(protocol string) AbstractCollect {
+// Global collector registry instance
+var globalRegistry = &CollectorRegistry{
+	factories:  make(map[string]CollectorFactory),
+	collectors: make(map[string]Collector),
+}
 
-	mu.RLock()
-	defer mu.RUnlock()
+// RegisterFactory registers a collector factory function
+// This is called during init() to register collector factories
+func RegisterFactory(protocol string, factory CollectorFactory) {
+	globalRegistry.mu.Lock()
+	defer globalRegistry.mu.Unlock()
 
-	return collectStrategy[protocol]
+	globalRegistry.factories[protocol] = factory
+}
+
+// InitializeCollectors creates actual collector instances using the registered factories
+// This should be called once when logger is available
+func InitializeCollectors(logger logger.Logger) {
+	globalRegistry.mu.Lock()
+	defer globalRegistry.mu.Unlock()
+
+	if globalRegistry.initialized {
+		return // Already initialized
+	}
+
+	for protocol, factory := range globalRegistry.factories {
+		collector := factory(logger)
+		globalRegistry.collectors[protocol] = collector
+	}
+
+	globalRegistry.initialized = true
+}
+
+// Register a collector directly (legacy method, kept for compatibility)
+func Register(collector Collector) {
+	globalRegistry.mu.Lock()
+	defer globalRegistry.mu.Unlock()
+
+	protocol := collector.Protocol()
+	globalRegistry.collectors[protocol] = collector
+}
+
+// CollectorFor returns the collector for a protocol
+func CollectorFor(protocol string) (Collector, error) {
+	globalRegistry.mu.RLock()
+	defer globalRegistry.mu.RUnlock()
+
+	collector, exists := globalRegistry.collectors[protocol]
+	if !exists {
+		return nil, fmt.Errorf("no collector found for protocol: %s", protocol)
+	}
+	return collector, nil
+}
+
+// SupportedProtocols returns all supported protocols
+func SupportedProtocols() []string {
+	globalRegistry.mu.RLock()
+	defer globalRegistry.mu.RUnlock()
+
+	protocols := make([]string, 0, len(globalRegistry.collectors))
+	for protocol := range globalRegistry.collectors {
+		protocols = append(protocols, protocol)
+	}
+	return protocols
+}
+
+// CollectorCount returns the number of registered collectors
+func CollectorCount() int {
+	globalRegistry.mu.RLock()
+	defer globalRegistry.mu.RUnlock()
+
+	return len(globalRegistry.collectors)
 }
