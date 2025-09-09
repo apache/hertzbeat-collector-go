@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
@@ -34,9 +35,7 @@ import (
 type CommonDispatcherImpl struct {
 	logger           logger.Logger
 	metricsCollector MetricsCollector
-	resultHandler    ResultHandler
-	ctx              context.Context
-	cancel           context.CancelFunc
+	resultHandler    collect.ResultHandler
 	mu               sync.RWMutex
 }
 
@@ -45,26 +44,19 @@ type MetricsCollector interface {
 	CollectMetrics(metrics *jobtypes.Metrics, job *jobtypes.Job, timeout *jobtypes.Timeout) chan *jobtypes.CollectRepMetricsData
 }
 
-// ResultHandler interface for handling collection results
-type ResultHandler interface {
-	HandleCollectData(data *jobtypes.CollectRepMetricsData, job *jobtypes.Job) error
-}
+// ResultHandler interface is now defined in collect/result_handler.go
 
 // NewCommonDispatcher creates a new common dispatcher
-func NewCommonDispatcher(logger logger.Logger, metricsCollector MetricsCollector, resultHandler ResultHandler) *CommonDispatcherImpl {
-	ctx, cancel := context.WithCancel(context.Background())
-
+func NewCommonDispatcher(logger logger.Logger, metricsCollector MetricsCollector, resultHandler collect.ResultHandler) *CommonDispatcherImpl {
 	return &CommonDispatcherImpl{
 		logger:           logger.WithName("common-dispatcher"),
 		metricsCollector: metricsCollector,
 		resultHandler:    resultHandler,
-		ctx:              ctx,
-		cancel:           cancel,
 	}
 }
 
 // DispatchMetricsTask dispatches a job by breaking it down into individual metrics collection tasks
-func (cd *CommonDispatcherImpl) DispatchMetricsTask(job *jobtypes.Job, timeout *jobtypes.Timeout) error {
+func (cd *CommonDispatcherImpl) DispatchMetricsTask(ctx context.Context, job *jobtypes.Job, timeout *jobtypes.Timeout) error {
 	if job == nil {
 		return fmt.Errorf("job cannot be nil")
 	}
@@ -85,7 +77,7 @@ func (cd *CommonDispatcherImpl) DispatchMetricsTask(job *jobtypes.Job, timeout *
 	}
 
 	// Create collection context with timeout
-	collectCtx, collectCancel := context.WithTimeout(cd.ctx, cd.getCollectionTimeout(job))
+	collectCtx, collectCancel := context.WithTimeout(ctx, cd.getCollectionTimeout(job))
 	defer collectCancel()
 
 	// Collect all metrics concurrently using channels (Go's way of handling concurrency)
@@ -239,6 +231,5 @@ func (cd *CommonDispatcherImpl) getCollectionTimeout(job *jobtypes.Job) time.Dur
 // Stop stops the common dispatcher
 func (cd *CommonDispatcherImpl) Stop() error {
 	cd.logger.Info("stopping common dispatcher")
-	cd.cancel()
 	return nil
 }
