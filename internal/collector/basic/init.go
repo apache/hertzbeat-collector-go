@@ -25,23 +25,32 @@ import (
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
+// init 函数在包被导入时自动执行
+// 集中注册所有协议的工厂函数
+func init() {
+	// 注册所有协议的工厂函数
+	// 新增协议时只需要在这里添加一行
+	strategy.RegisterFactory("jdbc", func(logger logger.Logger) strategy.Collector {
+		return database.NewJDBCCollector(logger)
+	})
+
+	// 未来可以在这里添加更多协议：
+	// strategy.RegisterFactory("http", func(logger logger.Logger) strategy.Collector {
+	//     return http.NewHTTPCollector(logger)
+	// })
+	// strategy.RegisterFactory("redis", func(logger logger.Logger) strategy.Collector {
+	//     return redis.NewRedisCollector(logger)
+	// })
+}
+
 // InitializeAllCollectors 初始化所有已注册的采集器
-// 当logger可用时调用此函数来创建实际的采集器实例
+// 此时init()函数已经注册了所有工厂函数
+// 这个函数创建实际的采集器实例
 func InitializeAllCollectors(logger logger.Logger) {
 	logger.Info("initializing all collectors")
 
-	// 直接注册所有采集器实例
-	// 新增协议时在这里添加
-	jdbcCollector := database.NewJDBCCollector(logger)
-	strategy.Register(jdbcCollector)
+	// 使用已注册的工厂函数创建采集器实例
+	strategy.InitializeCollectors(logger)
 
-	// 未来可以在这里添加更多协议：
-	// httpCollector := http.NewHTTPCollector(logger)
-	// strategy.Register(httpCollector)
-
-	// 记录初始化结果
-	protocols := strategy.SupportedProtocols()
-	logger.Info("collectors initialized successfully",
-		"protocols", protocols,
-		"count", len(protocols))
+	logger.Info("all collectors initialized successfully")
 }

@@ -24,6 +24,9 @@ import (
 	"fmt"
 	"sync"
 
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect/dispatch"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/dispatcher"
 	clrServer "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/collector"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
@@ -43,7 +46,6 @@ type Config struct {
 }
 
 // Runner implements the service runner interface
-// It directly manages job scheduling through timeDispatch
 type Runner struct {
 	Config
 	timeDispatch TimeDispatcher
@@ -54,7 +56,6 @@ type Runner struct {
 }
 
 // AddAsyncCollectJob adds a job to async collection scheduling
-// This is the main entry point that corresponds to Java's collectJobService.addAsyncCollectJob
 func (r *Runner) AddAsyncCollectJob(job *jobtypes.Job) error {
 	if job == nil {
 		r.Logger.Error(nil, "job cannot be nil")
@@ -116,21 +117,31 @@ func (r *Runner) RunningJobs() map[int64]*jobtypes.Job {
 	return result
 }
 
-// New creates a new job service runner
+// New creates a new job service runner with all components initialized
 func New(srv *Config) *Runner {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &Runner{
-		Config:      *srv,
-		runningJobs: make(map[int64]*jobtypes.Job),
-		ctx:         ctx,
-		cancel:      cancel,
-	}
-}
 
-// SetTimeDispatcher sets the time dispatcher for this runner
-// This should be called before starting the runner
-func (r *Runner) SetTimeDispatcher(td TimeDispatcher) {
-	r.timeDispatch = td
+	// Create result handler
+	resultHandler := collect.NewResultHandler(srv.Logger)
+
+	// Create metrics collector
+	metricsCollector := dispatch.NewMetricsCollector(srv.Logger)
+
+	// Create common dispatcher
+	commonDispatcher := dispatcher.NewCommonDispatcher(srv.Logger, metricsCollector, resultHandler)
+
+	// Create time dispatcher
+	timeDispatch := dispatcher.NewTimeDispatch(srv.Logger, commonDispatcher)
+
+	runner := &Runner{
+		Config:       *srv,
+		timeDispatch: timeDispatch,
+		runningJobs:  make(map[int64]*jobtypes.Job),
+		ctx:          ctx,
+		cancel:       cancel,
+	}
+
+	return runner
 }
 
 // Start starts the job service runner
@@ -138,12 +149,14 @@ func (r *Runner) Start(ctx context.Context) error {
 	r.Logger = r.Logger.WithName(r.Info().Name).WithValues("runner", r.Info().Name)
 	r.Logger.Info("Starting job service runner")
 
-	// Start the time dispatcher if it's set
+	// Start the time dispatcher
 	if r.timeDispatch != nil {
 		if err := r.timeDispatch.Start(ctx); err != nil {
 			r.Logger.Error(err, "failed to start time dispatcher")
 			return fmt.Errorf("failed to start time dispatcher: %w", err)
 		}
+	} else {
+		return fmt.Errorf("time dispatcher is not initialized")
 	}
 
 	r.Logger.Info("job service runner started successfully")
@@ -167,18 +180,22 @@ func (r *Runner) Info() collector.Info {
 	}
 }
 
-// Close closes the job service runner
+// Close closes the job service runner and all its components
 func (r *Runner) Close() error {
 	r.Logger.Info("closing job service runner")
 
 	r.cancel()
 
+	// Stop time dispatcher
 	if r.timeDispatch != nil {
 		if err := r.timeDispatch.Stop(); err != nil {
 			r.Logger.Error(err, "error stopping time dispatcher")
-			return err
+			// Continue cleanup despite error
 		}
 	}
+
+	// Stop common dispatcher (via time dispatcher's commonDispatcher field)
+	// This is handled internally by the time dispatcher's Stop method
 
 	// Clear running jobs
 	r.mu.Lock()

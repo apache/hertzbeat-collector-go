@@ -64,7 +64,6 @@ func NewCommonDispatcher(logger logger.Logger, metricsCollector MetricsCollector
 }
 
 // DispatchMetricsTask dispatches a job by breaking it down into individual metrics collection tasks
-// This is the core method that corresponds to Java's CommonDispatcher.dispatchMetricsTask
 func (cd *CommonDispatcherImpl) DispatchMetricsTask(job *jobtypes.Job, timeout *jobtypes.Timeout) error {
 	if job == nil {
 		return fmt.Errorf("job cannot be nil")
@@ -79,7 +78,7 @@ func (cd *CommonDispatcherImpl) DispatchMetricsTask(job *jobtypes.Job, timeout *
 	startTime := time.Now()
 
 	// Get the next metrics to collect based on job priority and dependencies
-	metricsToCollect := job.GetNextCollectMetrics()
+	metricsToCollect := job.NextCollectMetrics()
 	if len(metricsToCollect) == 0 {
 		cd.logger.Info("no metrics to collect", "jobID", job.ID)
 		return nil
