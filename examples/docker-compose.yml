@@ -56,4 +56,3 @@ networks:
 
 volumes:
   logs:
-  
