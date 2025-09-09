@@ -69,6 +69,7 @@ docker run -d \
 ### 3. 示例
 
 查看 `examples/` 目录获取各种使用示例：
+
 - `examples/main.go` - 使用环境变量的主要示例
 - `examples/README.md` - 完整使用指南
 - `examples/Dockerfile` - Docker 构建示例
@@ -318,6 +319,7 @@ Go 采集器实现提供了与 Java 版本的全面兼容性：
 #### 🔧 **技术实现细节**
 
 1. **Netty 协议实现**
+
    ```go
    // Java 兼容的长度前缀消息格式
    func (c *NettyClient) writeMessage(msg *pb.Message) error {
@@ -339,6 +341,7 @@ Go 采集器实现提供了与 Java 版本的全面兼容性：
    ```
 
 2. **响应未来模式**
+
    ```go
    // 使用 ResponseFuture 进行同步通信
    func (c *NettyClient) SendMsgSync(msg interface{}, timeoutMillis int) (interface{}, error) {
@@ -359,6 +362,7 @@ Go 采集器实现提供了与 Java 版本的全面兼容性：
    ```
 
 3. **事件驱动架构**
+
    ```go
    // 连接事件处理
    func (c *NettyClient) triggerEvent(eventType EventType, err error) {

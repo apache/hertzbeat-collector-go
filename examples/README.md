@@ -105,6 +105,7 @@ examples/
 ### 常见问题
 
 **连接被拒绝**
+
 ```bash
 # 检查管理服务器状态
 telnet $MANAGER_HOST $MANAGER_PORT
@@ -114,6 +115,7 @@ sudo ufw status
 ```
 
 **心跳超时**
+
 ```bash
 # 增加心跳间隔
 export MANAGER_HEARTBEAT_INTERVAL=30
@@ -176,7 +178,7 @@ runner.RegisterProcessor(100, func(msg interface{}) (interface{}, error) {
 
 ---
 
-# HertzBeat Collector Go - Examples
+## English Version
 
 This directory contains usage examples for HertzBeat Collector Go.
 
@@ -283,6 +285,7 @@ If you encounter connection issues, please check:
 ### Common Issues
 
 **Connection Refused**
+
 ```bash
 # Check manager server status
 telnet $MANAGER_HOST $MANAGER_PORT
@@ -292,6 +295,7 @@ sudo ufw status
 ```
 
 **Heartbeat Timeout**
+
 ```bash
 # Increase heartbeat interval
 export MANAGER_HEARTBEAT_INTERVAL=30

@@ -7,6 +7,7 @@
 ## 主要特性
 
 ### 1. **完整的消息类型支持**
+
 - HEARTBEAT (0) - 心跳消息
 - GO_ONLINE (1) - 采集器上线通知
 - GO_OFFLINE (2) - 采集器下线通知
@@ -19,17 +20,20 @@
 - RESPONSE_CYCLIC_TASK_SD_DATA (9) - 周期性任务服务发现响应
 
 ### 2. **事件驱动架构**
+
 - 连接事件（已连接、断开连接、连接失败）
 - 自定义事件处理器
 - 连接丢失时自动重连
 
 ### 3. **消息处理**
+
 - 异步消息处理
 - 同步请求-响应模式
 - 按类型注册消息处理器
 - 所有消息类型的默认处理器
 
 ### 4. **连接管理**
+
 - 自动连接监控
 - 心跳机制（10秒间隔）
 - 优雅关闭处理
@@ -141,11 +145,13 @@ if err := runner.Start(ctx); err != nil {
 ### 配置
 
 #### 环境变量
+
 - `MANAGER_HOST`: 管理服务器主机（默认：127.0.0.1）
 - `MANAGER_PORT`: 管理服务器端口（默认：1158）
 - `MANAGER_PROTOCOL`: 通信协议（默认：netty）
 
 #### 配置结构
+
 ```go
 type Config struct {
     clrServer.Server
@@ -204,6 +210,7 @@ client.RegisterProcessor(100, func(msg interface{}) (interface{}, error) {
 ## 测试
 
 运行测试：
+
 ```bash
 go test ./internal/transport/...
 ```
@@ -252,6 +259,7 @@ go test ./internal/transport/...
 ### 调试日志
 
 通过设置日志级别启用调试日志：
+
 ```go
 logger, _ := zap.NewDevelopment()
 ```
@@ -268,7 +276,7 @@ logger, _ := zap.NewDevelopment()
 
 ---
 
-# Transport Module Documentation
+## English Version
 
 ## Overview
 
@@ -277,6 +285,7 @@ The transport module provides a comprehensive communication layer for the HertzB
 ## Key Features
 
 ### 1. **Complete Message Type Support**
+
 - HEARTBEAT (0) - Heartbeat messages
 - GO_ONLINE (1) - Collector online notification
 - GO_OFFLINE (2) - Collector offline notification
@@ -289,17 +298,20 @@ The transport module provides a comprehensive communication layer for the HertzB
 - RESPONSE_CYCLIC_TASK_SD_DATA (9) - Cyclic task service discovery response
 
 ### 2. **Event-Driven Architecture**
+
 - Connection events (Connected, Disconnected, Connect Failed)
 - Custom event handlers
 - Automatic reconnection on connection loss
 
 ### 3. **Message Processing**
+
 - Asynchronous message processing
 - Synchronous request-response pattern
 - Message processor registration by type
 - Default processors for all message types
 
 ### 4. **Connection Management**
+
 - Automatic connection monitoring
 - Heartbeat mechanism (10-second intervals)
 - Graceful shutdown handling
@@ -411,11 +423,13 @@ if err := runner.Start(ctx); err != nil {
 ### Configuration
 
 #### Environment Variables
+
 - `MANAGER_HOST`: Manager server host (default: 127.0.0.1)
 - `MANAGER_PORT`: Manager server port (default: 1158)
 - `MANAGER_PROTOCOL`: Communication protocol (default: netty)
 
 #### Configuration Structure
+
 ```go
 type Config struct {
     clrServer.Server
@@ -474,6 +488,7 @@ The transport module provides comprehensive error handling:
 ## Testing
 
 Run tests with:
+
 ```bash
 go test ./internal/transport/...
 ```
@@ -522,6 +537,7 @@ go test ./internal/transport/...
 ### Debug Logging
 
 Enable debug logging by setting the log level:
+
 ```go
 logger, _ := zap.NewDevelopment()
 ```

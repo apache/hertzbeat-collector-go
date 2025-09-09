@@ -69,6 +69,7 @@ docker run -d \
 ### 3. Examples
 
 See `examples/` directory for various usage examples:
+
 - `examples/main.go` - Main example with environment variables
 - `examples/README.md` - Complete usage guide
 - `examples/Dockerfile` - Docker build example
@@ -318,6 +319,7 @@ The Go collector implementation provides comprehensive compatibility with the Ja
 #### 🔧 **Technical Implementation Details**
 
 1. **Netty Protocol Implementation**
+
    ```go
    // Length-prefixed message format for Java compatibility
    func (c *NettyClient) writeMessage(msg *pb.Message) error {
@@ -339,6 +341,7 @@ The Go collector implementation provides comprehensive compatibility with the Ja
    ```
 
 2. **Response Future Pattern**
+
    ```go
    // Synchronous communication using ResponseFuture
    func (c *NettyClient) SendMsgSync(msg interface{}, timeoutMillis int) (interface{}, error) {
@@ -359,6 +362,7 @@ The Go collector implementation provides comprehensive compatibility with the Ja
    ```
 
 3. **Event-Driven Architecture**
+
    ```go
    // Connection event handling
    func (c *NettyClient) triggerEvent(eventType EventType, err error) {
