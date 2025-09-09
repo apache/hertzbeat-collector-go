@@ -25,16 +25,16 @@ import (
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
-// init 函数在包被导入时自动执行
-// 集中注册所有协议的工厂函数
+// init function is automatically executed when the package is imported
+// It centrally registers factory functions for all protocols
 func init() {
-	// 注册所有协议的工厂函数
-	// 新增协议时只需要在这里添加一行
+	// Register factory functions for all protocols
+	// To add a new protocol, simply add a line here
 	strategy.RegisterFactory("jdbc", func(logger logger.Logger) strategy.Collector {
 		return database.NewJDBCCollector(logger)
 	})
 
-	// 未来可以在这里添加更多协议：
+	// More protocols can be added here in the future:
 	// strategy.RegisterFactory("http", func(logger logger.Logger) strategy.Collector {
 	//     return http.NewHTTPCollector(logger)
 	// })
@@ -43,13 +43,13 @@ func init() {
 	// })
 }
 
-// InitializeAllCollectors 初始化所有已注册的采集器
-// 此时init()函数已经注册了所有工厂函数
-// 这个函数创建实际的采集器实例
+// InitializeAllCollectors initializes all registered collectors
+// At this point, the init() function has already registered all factory functions
+// This function creates the actual collector instances
 func InitializeAllCollectors(logger logger.Logger) {
 	logger.Info("initializing all collectors")
 
-	// 使用已注册的工厂函数创建采集器实例
+	// Create collector instances using registered factory functions
 	strategy.InitializeCollectors(logger)
 
 	logger.Info("all collectors initialized successfully")

@@ -21,6 +21,7 @@ package collect
 
 import (
 	"fmt"
+	"net/http"
 
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
@@ -32,8 +33,13 @@ type ResultHandlerImpl struct {
 	// TODO: Add data queue or storage interface when needed
 }
 
+// ResultHandler interface for handling collection results
+type ResultHandler interface {
+	HandleCollectData(data *jobtypes.CollectRepMetricsData, job *jobtypes.Job) error
+}
+
 // NewResultHandler creates a new result handler
-func NewResultHandler(logger logger.Logger) *ResultHandlerImpl {
+func NewResultHandler(logger logger.Logger) ResultHandler {
 	return &ResultHandlerImpl{
 		logger: logger.WithName("result-handler"),
 	}
@@ -61,7 +67,7 @@ func (rh *ResultHandlerImpl) HandleCollectData(data *jobtypes.CollectRepMetricsD
 	// 4. Triggering alerts based on thresholds
 	// 5. Updating monitoring status
 
-	if data.Code == 200 {
+	if data.Code == http.StatusOK {
 		rh.logger.Info("successfully processed collect data",
 			"jobID", job.ID,
 			"metricsName", data.Metrics)

@@ -36,15 +36,13 @@ type TimeDispatch struct {
 	commonDispatcher MetricsTaskDispatcher
 	cyclicTasks      sync.Map // map[int64]*jobtypes.Timeout for cyclic jobs
 	tempTasks        sync.Map // map[int64]*jobtypes.Timeout for one-time jobs
-	ctx              context.Context
-	cancel           context.CancelFunc
 	started          bool
 	mu               sync.RWMutex
 }
 
 // MetricsTaskDispatcher interface for metrics task dispatching
 type MetricsTaskDispatcher interface {
-	DispatchMetricsTask(job *jobtypes.Job, timeout *jobtypes.Timeout) error
+	DispatchMetricsTask(ctx context.Context, job *jobtypes.Job, timeout *jobtypes.Timeout) error
 }
 
 // HashedWheelTimer interface for time wheel operations
@@ -56,13 +54,9 @@ type HashedWheelTimer interface {
 
 // NewTimeDispatch creates a new time dispatcher
 func NewTimeDispatch(logger logger.Logger, commonDispatcher MetricsTaskDispatcher) *TimeDispatch {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	td := &TimeDispatch{
 		logger:           logger.WithName("time-dispatch"),
 		commonDispatcher: commonDispatcher,
-		ctx:              ctx,
-		cancel:           cancel,
 		started:          false,
 	}
 
@@ -168,9 +162,6 @@ func (td *TimeDispatch) Stop() error {
 
 	td.logger.Info("stopping time dispatcher")
 
-	// Cancel context
-	td.cancel()
-
 	// Cancel all running tasks
 	td.cyclicTasks.Range(func(key, value interface{}) bool {
 		if timeout, ok := value.(*jobtypes.Timeout); ok {
@@ -201,7 +192,7 @@ func (td *TimeDispatch) Stop() error {
 }
 
 // Stats returns dispatcher statistics
-func (td *TimeDispatch) Stats() map[string]interface{} {
+func (td *TimeDispatch) Stats() map[string]any {
 	cyclicCount := 0
 	tempCount := 0
 
@@ -215,7 +206,7 @@ func (td *TimeDispatch) Stats() map[string]interface{} {
 		return true
 	})
 
-	return map[string]interface{}{
+	return map[string]any{
 		"cyclicJobs": cyclicCount,
 		"tempJobs":   tempCount,
 		"started":    td.started,
