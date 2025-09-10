@@ -66,7 +66,7 @@ if err := factory.ValidateConfig(cfg); err != nil {
 Three distinct entry points for different use cases:
 
 - **`config.LoadFromFile(path)`**: File-only configuration loading
-- **`config.LoadFromEnv()`**: Environment-only configuration loading  
+- **`config.LoadFromEnv()`**: Environment-only configuration loading
 - **`config.LoadUnified(path)`**: Combined file + environment loading (recommended)
 
 #### 3. Configuration Structure
@@ -101,17 +101,17 @@ The system includes comprehensive validation:
 
 #### 5. Default Values
 
-| Field | Default Value | Description |
-|-------|---------------|-------------|
-| Identity | `hertzbeat-collector-go` | Collector identifier |
-| Mode | `public` | Collector mode |
-| Collector.Name | `hertzbeat-collector-go` | Collector service name |
-| Collector.IP | `127.0.0.1` | Collector bind address |
-| Collector.Port | `8080` | Collector service port |
-| Manager.Host | `127.0.0.1` | Manager server host |
-| Manager.Port | `1158` | Manager server port |
-| Manager.Protocol | `netty` | Communication protocol |
-| Log.Level | `info` | Logging level |
+| Field            | Default Value            | Description            |
+| ---------------- | ------------------------ | ---------------------- |
+| Identity         | `hertzbeat-collector-go` | Collector identifier   |
+| Mode             | `public`                 | Collector mode         |
+| Collector.Name   | `hertzbeat-collector-go` | Collector service name |
+| Collector.IP     | `127.0.0.1`              | Collector bind address |
+| Collector.Port   | `8080`                   | Collector service port |
+| Manager.Host     | `127.0.0.1`              | Manager server host    |
+| Manager.Port     | `1158`                   | Manager server port    |
+| Manager.Protocol | `netty`                  | Communication protocol |
+| Log.Level        | `info`                   | Logging level          |
 
 ### Migration from Legacy Configuration
 
@@ -239,17 +239,17 @@ Configuration precedence (highest to lowest):
 
 #### Supported Environment Variables
 
-| Environment Variable | Description | Default Value |
-|---------------------|-------------|---------------|
-| `IDENTITY` | Collector identity | `hertzbeat-collector-go` |
-| `MODE` | Collector mode (`public`/`private`) | `public` |
-| `COLLECTOR_NAME` | Collector name | `hertzbeat-collector-go` |
-| `COLLECTOR_IP` | Collector bind IP | `127.0.0.1` |
-| `COLLECTOR_PORT` | Collector bind port | `8080` |
-| `MANAGER_HOST` | Manager server host | `127.0.0.1` |
-| `MANAGER_PORT` | Manager server port | `1158` |
-| `MANAGER_PROTOCOL` | Protocol (`netty`/`grpc`) | `netty` |
-| `LOG_LEVEL` | Log level | `info` |
+| Environment Variable | Description                         | Default Value            |
+| -------------------- | ----------------------------------- | ------------------------ |
+| `IDENTITY`           | Collector identity                  | `hertzbeat-collector-go` |
+| `MODE`               | Collector mode (`public`/`private`) | `public`                 |
+| `COLLECTOR_NAME`     | Collector name                      | `hertzbeat-collector-go` |
+| `COLLECTOR_IP`       | Collector bind IP                   | `127.0.0.1`              |
+| `COLLECTOR_PORT`     | Collector bind port                 | `8080`                   |
+| `MANAGER_HOST`       | Manager server host                 | `127.0.0.1`              |
+| `MANAGER_PORT`       | Manager server port                 | `1158`                   |
+| `MANAGER_PROTOCOL`   | Protocol (`netty`/`grpc`)           | `netty`                  |
+| `LOG_LEVEL`          | Log level                           | `info`                   |
 
 ### 3. Examples
 
@@ -268,6 +268,7 @@ This Go collector is designed to be compatible with the Java version of HertzBea
 The Go collector supports two communication protocols:
 
 1. **Netty Protocol** (Recommended for Java server compatibility)
+
    - Uses length-prefixed protobuf message format
    - Compatible with Java Netty server implementation
    - Default port: 1158
@@ -294,7 +295,7 @@ collector:
   log:
     level: debug
 
-  # Manager/Transport configuration  
+  # Manager/Transport configuration
   manager:
     host: 127.0.0.1
     port: 1158
@@ -313,7 +314,7 @@ The collector provides three configuration loading methods:
 
    ```go
    import "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
-   
+
    cfg, err := config.LoadFromFile("etc/hertzbeat-collector.yaml")
    if err != nil {
        log.Fatal("Failed to load config:", err)
@@ -324,7 +325,7 @@ The collector provides three configuration loading methods:
 
    ```go
    import "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
-   
+
    cfg := config.LoadFromEnv()
    ```
 
@@ -332,7 +333,7 @@ The collector provides three configuration loading methods:
 
    ```go
    import "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
-   
+
    // Environment variables override file values
    cfg, err := config.LoadUnified("etc/hertzbeat-collector.yaml")
    if err != nil {
@@ -366,10 +367,10 @@ func main() {
 
     // Create transport runner with unified config
     runner := transport.New(cfg)
-    
+
     ctx, cancel := context.WithCancel(context.Background())
     defer cancel()
-    
+
     // Start transport in background
     go func() {
         if err := runner.Start(ctx); err != nil {
@@ -377,14 +378,14 @@ func main() {
             cancel()
         }
     }()
-    
+
     // Wait for shutdown signal
     sigChan := make(chan os.Signal, 1)
     signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
     <-sigChan
-    
+
     log.Println("Shutting down...")
-    
+
     if err := runner.Close(); err != nil {
         log.Printf("Failed to close transport: %v", err)
     }
@@ -411,13 +412,13 @@ func main() {
     if err != nil {
         log.Fatal("Failed to create client:", err)
     }
-    
+
     // Start client
     if err := client.Start(); err != nil {
         log.Fatal("Failed to start client:", err)
     }
     defer client.Shutdown()
-    
+
     // Register message processor
     client.RegisterProcessor(100, func(msg interface{}) (interface{}, error) {
         if pbMsg, ok := msg.(*pb.Message); ok {
@@ -431,7 +432,7 @@ func main() {
         }
         return nil, nil
     })
-    
+
     // Send heartbeat message
     heartbeat := &pb.Message{
         Type:      pb.MessageType_HEARTBEAT,
@@ -439,12 +440,12 @@ func main() {
         Identity:  "go-collector",
         Msg:       []byte("heartbeat"),
     }
-    
+
     // Async send
     if err := client.SendMsg(heartbeat); err != nil {
         log.Printf("Failed to send message: %v", err)
     }
-    
+
     // Sync send with timeout
     resp, err := client.SendMsgSync(heartbeat, 5000)
     if err != nil {
@@ -461,15 +462,15 @@ func main() {
 
 The Go collector supports all message types defined in the Java version:
 
-| Message Type | Value | Description |
-|-------------|-------|-------------|
-| HEARTBEAT | 0 | Heartbeat/health check |
-| GO_ONLINE | 1 | Collector online notification |
-| GO_OFFLINE | 2 | Collector offline notification |
-| GO_CLOSE | 3 | Collector shutdown notification |
-| ISSUE_CYCLIC_TASK | 4 | Issue cyclic collection task |
-| DELETE_CYCLIC_TASK | 5 | Delete cyclic collection task |
-| ISSUE_ONE_TIME_TASK | 6 | Issue one-time collection task |
+| Message Type        | Value | Description                     |
+| ------------------- | ----- | ------------------------------- |
+| HEARTBEAT           | 0     | Heartbeat/health check          |
+| GO_ONLINE           | 1     | Collector online notification   |
+| GO_OFFLINE          | 2     | Collector offline notification  |
+| GO_CLOSE            | 3     | Collector shutdown notification |
+| ISSUE_CYCLIC_TASK   | 4     | Issue cyclic collection task    |
+| DELETE_CYCLIC_TASK  | 5     | Delete cyclic collection task   |
+| ISSUE_ONE_TIME_TASK | 6     | Issue one-time collection task  |
 
 ### Connection Management
 
@@ -498,18 +499,21 @@ The Go collector implementation provides comprehensive compatibility with the Ja
 #### ✅ **Fully Implemented Features**
 
 1. **Transport Layer Compatibility**
+
    - **Netty Protocol**: Complete implementation with length-prefixed message format
    - **gRPC Protocol**: Full gRPC service implementation with bidirectional streaming
    - **Message Types**: All core message types (HEARTBEAT, GO_ONLINE, GO_OFFLINE, etc.) are supported
    - **Request/Response Pattern**: Proper handling of synchronous and asynchronous communication
 
 2. **Connection Management**
+
    - **Auto-reconnection**: Robust reconnection logic when connection is lost
    - **Connection Monitoring**: Background health checks with deadline management
    - **Event System**: Comprehensive event handling for connection state changes
    - **Heartbeat Mechanism**: Regular heartbeat messages for connection maintenance
 
 3. **Message Processing**
+
    - **Processor Registry**: Dynamic message processor registration and dispatch
    - **Response Correlation**: Proper request-response matching using identity field
    - **Error Handling**: Comprehensive error handling throughout the message pipeline
@@ -523,11 +527,13 @@ The Go collector implementation provides comprehensive compatibility with the Ja
 #### ⚠️ **Areas for Improvement**
 
 1. **Task Processing Logic**
+
    - Current implementation returns placeholder responses for task processing
    - Actual collection logic needs to be implemented based on specific requirements
    - Task scheduling and execution engine needs integration
 
 2. **Configuration Management**
+
    - Configuration file format needs to be standardized with Java version
    - Environment variable support could be enhanced
    - Dynamic configuration reloading could be added
@@ -570,13 +576,13 @@ The Go collector implementation provides comprehensive compatibility with the Ja
        future := NewResponseFuture()
        c.responseTable[pbMsg.Identity] = future
        defer delete(c.responseTable, pbMsg.Identity)
-       
+
        // Send message
        if err := c.writeMessage(pbMsg); err != nil {
            future.PutError(err)
            return nil, err
        }
-       
+
        // Wait for response with timeout
        return future.Wait(time.Duration(timeoutMillis) * time.Millisecond)
    }
@@ -610,12 +616,14 @@ The Go implementation achieves **high compatibility** with the Java version:
 #### 📋 **Recommendations**
 
 1. **For Production Use**:
+
    - Implement actual task processing logic based on specific monitoring requirements
    - Add comprehensive logging and monitoring
    - Implement configuration validation and management
    - Add integration tests with Java server
 
 2. **For Development**:
+
    - The current implementation provides a solid foundation
    - All core communication patterns are correctly implemented
    - Protocol compatibility is thoroughly addressed

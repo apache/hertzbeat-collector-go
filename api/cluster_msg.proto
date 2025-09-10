@@ -19,7 +19,7 @@ syntax = "proto3";
 
 package hertzbeat.apache.org.api.msg;
 
-option go_package = "hertzbeat.apache.org/api/msg;cluster_msg";
+option go_package = "hertzbeat.apache.org/hertzbeat-collector-go/api;api";
 option java_package = "org.apache.hertzbeat.api.cluster_msg";
 
 message Message {

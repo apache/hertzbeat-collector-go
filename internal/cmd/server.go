@@ -117,9 +117,7 @@ func startRunners(ctx context.Context, cfg *clrServer.Server) error {
 			}),
 		},
 		{
-			transportserver.New(&transportserver.Config{
-				Server: *cfg,
-			}),
+			transportserver.NewFromConfig(cfg.Config),
 		},
 		// todo; add metrics
 	}

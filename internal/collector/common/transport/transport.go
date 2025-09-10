@@ -23,13 +23,14 @@ import (
 	"fmt"
 	"os"
 
-	config "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
-	configtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/config"
+	pb "hertzbeat.apache.org/hertzbeat-collector-go/api"
 	clrServer "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/collector"
+	configtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/config"
+	loggerTypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+	config "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/transport"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
-	pb "hertzbeat.apache.org/hertzbeat-collector-go/api/cluster_msg"
 )
 
 const (
@@ -43,23 +44,18 @@ const (
 	DefaultIdentity = "collector-go"
 )
 
-type Config struct {
-	clrServer.Server
-	// 可扩展更多配置
-	ServerAddr   string // 管理端 server 地址
-	Protocol     string // 通信协议: grpc, netty
-	Identity     string // 采集器标识
-	Mode         string // 运行模式: public, private
-}
-
 type Runner struct {
-	Config
-	client     transport.TransportClient
+	Config *configtypes.CollectorConfig
+	client transport.TransportClient
+	clrServer.Server
 }
 
-func New(srv *Config) *Runner {
+func New(cfg *configtypes.CollectorConfig) *Runner {
 	return &Runner{
-		Config: *srv,
+		Config: cfg,
+		Server: clrServer.Server{
+			Logger: logger.Logger{}, // Will be initialized properly in Start method
+		},
 	}
 }
 
@@ -68,19 +64,7 @@ func NewFromConfig(cfg *configtypes.CollectorConfig) *Runner {
 	if cfg == nil {
 		return nil
 	}
-	
-	// Create transport config from collector config
-	transportConfig := &Config{
-		Server: clrServer.Server{
-			Logger: logger.Logger{}, // Will be set by caller
-		},
-		ServerAddr: fmt.Sprintf("%s:%s", cfg.Collector.Manager.Host, cfg.Collector.Manager.Port),
-		Protocol:   cfg.Collector.Manager.Protocol,
-		Identity:   cfg.Collector.Identity,
-		Mode:       cfg.Collector.Mode,
-	}
-	
-	return New(transportConfig)
+	return New(cfg)
 }
 
 // NewFromEnv creates a new transport runner from environment variables
@@ -102,31 +86,36 @@ func NewFromUnifiedConfig(cfgPath string) (*Runner, error) {
 }
 
 func (r *Runner) Start(ctx context.Context) error {
+	// 初始化 Logger 如果它还没有被设置
+	if r.Logger.IsZero() {
+		r.Logger = logger.DefaultLogger(os.Stdout, loggerTypes.LogLevelInfo)
+	}
 	r.Logger = r.Logger.WithName(r.Info().Name).WithValues("runner", r.Info().Name)
 	r.Logger.Info("Starting transport client")
 
-	// 读取 server 地址，优先从配置/env，默认 localhost:1158 (Java Netty默认端口)
-	addr := r.Config.ServerAddr
-	if addr == "" {
+	// 构建 server 地址
+	addr := fmt.Sprintf("%s:%s", r.Config.Collector.Manager.Host, r.Config.Collector.Manager.Port)
+	if addr == ":" {
+		// 如果配置为空，使用环境变量或默认值
 		if v := os.Getenv("MANAGER_ADDR"); v != "" {
 			addr = v
 		} else {
-			addr = DefaultManagerAddr // Java版本的默认端口
+			addr = DefaultManagerAddr
 		}
 	}
-	
-	// 确定协议，默认使用netty以兼容Java版本
-	protocol := r.Config.Protocol
+
+	// 确定协议
+	protocol := r.Config.Collector.Manager.Protocol
 	if protocol == "" {
 		if v := os.Getenv("MANAGER_PROTOCOL"); v != "" {
 			protocol = v
 		} else {
-			protocol = DefaultProtocol // 默认使用netty协议
+			protocol = DefaultProtocol
 		}
 	}
-	
+
 	r.Logger.Info("Connecting to manager server", "addr", addr, "protocol", protocol)
-	
+
 	// 创建客户端
 	factory := &transport.TransportClientFactory{}
 	client, err := factory.CreateClient(protocol, addr)
@@ -134,14 +123,19 @@ func (r *Runner) Start(ctx context.Context) error {
 		r.Logger.Error(err, "Failed to create transport client")
 		return err
 	}
-	
+
 	// Set the identity on the client if it supports it
-	if nettyClient, ok := client.(*transport.NettyClient); ok {
-		nettyClient.SetIdentity(r.Identity)
+	identity := r.Config.Collector.Identity
+	if identity == "" {
+		identity = DefaultIdentity
 	}
-	
+
+	if nettyClient, ok := client.(*transport.NettyClient); ok {
+		nettyClient.SetIdentity(identity)
+	}
+
 	r.client = client
-	
+
 	// 设置事件处理器
 	switch c := client.(type) {
 	case *transport.GrpcClient:
@@ -171,7 +165,7 @@ func (r *Runner) Start(ctx context.Context) error {
 		})
 		transport.RegisterDefaultNettyProcessors(c)
 	}
-	
+
 	if err := r.client.Start(); err != nil {
 		r.Logger.Error(err, "Failed to start transport client")
 		return err
@@ -195,41 +189,41 @@ func (r *Runner) Start(ctx context.Context) error {
 
 func (r *Runner) sendOnlineMessage() {
 	if r.client != nil && r.client.IsStarted() {
-		// Use the configured identity instead of hardcoded value
-		identity := r.Identity
+		// Use the configured identity
+		identity := r.Config.Collector.Identity
 		if identity == "" {
 			identity = DefaultIdentity
 		}
-		
+
 		// Create CollectorInfo JSON structure as expected by Java server
-		mode := r.Config.Mode
+		mode := r.Config.Collector.Mode
 		if mode == "" {
 			mode = DefaultMode // Default mode as in Java version
 		}
-		
+
 		collectorInfo := map[string]interface{}{
 			"name":    identity,
 			"ip":      "", // Let server detect IP
 			"version": "1.0.0",
 			"mode":    mode,
 		}
-		
+
 		// Convert to JSON bytes
 		jsonData, err := json.Marshal(collectorInfo)
 		if err != nil {
 			r.Logger.Error(err, "Failed to marshal collector info to JSON")
 			return
 		}
-		
+
 		onlineMsg := &pb.Message{
 			Type:      pb.MessageType_GO_ONLINE,
 			Direction: pb.Direction_REQUEST,
 			Identity:  identity,
 			Msg:       jsonData,
 		}
-		
+
 		r.Logger.Info("Sending online message", "identity", identity, "type", onlineMsg.Type)
-		
+
 		if err := r.client.SendMsg(onlineMsg); err != nil {
 			r.Logger.Error(err, "Failed to send online message", "identity", identity)
 		} else {

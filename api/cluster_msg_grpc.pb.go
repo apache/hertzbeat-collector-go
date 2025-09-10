@@ -18,9 +18,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v6.32.0
-// source: api/cluster_msg.proto
+// source: cluster_msg.proto
 
-package cluster_msg
+package api
 
 import (
 	context "context"
@@ -174,5 +174,5 @@ var ClusterMsgService_ServiceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
-	Metadata: "api/cluster_msg.proto",
+	Metadata: "cluster_msg.proto",
 }

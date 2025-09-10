@@ -33,29 +33,31 @@ const (
 	DefaultHertzBeatCollectorName = "hertzbeat-collector"
 )
 
+// Loader handles file-based configuration loading
+// It uses the common ConfigFactory for consistency
 type Loader struct {
 	cfgPath string
+	factory *ConfigFactory
 	logger  logger.Logger
 }
 
 func New(cfgPath string) *Loader {
-
 	return &Loader{
 		cfgPath: cfgPath,
+		factory: NewConfigFactory(),
 	}
 }
 
 func (l *Loader) LoadConfig() (*config.CollectorConfig, error) {
-
 	l.logger = logger.DefaultLogger(os.Stdout, loggertypes.LogLevelInfo).WithName("config-loader")
 
 	if l.cfgPath == "" {
-		l.logger.Info("collector-config-loader: path is empty")
-		return nil, errors.New("collector-config-loader: path is empty")
+		l.logger.Info("file-config-loader: path is empty, using defaults")
+		return l.factory.CreateDefaultConfig(), nil
 	}
 
 	if _, err := os.Stat(l.cfgPath); os.IsNotExist(err) {
-		l.logger.Error(err, "collector-config-loader: file not exist", "path", l.cfgPath)
+		l.logger.Error(err, "file-config-loader: file not exist", "path", l.cfgPath)
 		return nil, err
 	}
 
@@ -77,31 +79,49 @@ func (l *Loader) LoadConfig() (*config.CollectorConfig, error) {
 		return nil, err
 	}
 
-	return &cfg, nil
+	// Fill in any missing fields with defaults
+	filledCfg := l.factory.MergeWithEnv(&cfg)
+
+	l.logger.Info("Configuration loaded from file", "path", l.cfgPath)
+	return filledCfg, nil
 }
 
 func (l *Loader) ValidateConfig(cfg *config.CollectorConfig) error {
+	if l.factory != nil {
+		return l.factory.ValidateConfig(cfg)
+	}
 
+	// Fallback validation if factory is not available
 	if cfg == nil {
-		l.logger.Error(collectortypes.CollectorConfigIsNil, "collector-config-loader is nil")
-		return errors.New("collector-config-loader is nil")
+		l.logger.Error(collectortypes.CollectorConfigIsNil, "config-loader is nil")
+		return errors.New("config-loader is nil")
 	}
 
 	// other check
 	if cfg.Collector.Info.IP == "" {
 		l.logger.Error(collectortypes.CollectorIPIsNil, "collector ip is empty")
-		return errors.New("collector-config-loader ip is empty")
+		return errors.New("config-loader ip is empty")
 	}
 
 	if cfg.Collector.Info.Port == "" {
-		l.logger.Error(collectortypes.CollectorPortIsNil, "collector-config-loader: port is empty")
-		return errors.New("collector-config-loader port is empty")
+		l.logger.Error(collectortypes.CollectorPortIsNil, "config-loader: port is empty")
+		return errors.New("config-loader port is empty")
 	}
 
 	if cfg.Collector.Info.Name == "" {
-		l.logger.Sugar().Debug("collector-config-loader: name is empty")
+		l.logger.Sugar().Debug("config-loader: name is empty")
 		cfg.Collector.Info.Name = DefaultHertzBeatCollectorName
 	}
 
 	return nil
+}
+
+// GetManagerAddress returns the full manager address using the factory
+func (l *Loader) GetManagerAddress(cfg *config.CollectorConfig) string {
+	return l.factory.GetManagerAddress(cfg)
+}
+
+// PrintConfig prints the configuration using the factory
+func (l *Loader) PrintConfig(cfg *config.CollectorConfig) {
+	l.factory.PrintConfig(cfg)
 }

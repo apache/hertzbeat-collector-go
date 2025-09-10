@@ -66,7 +66,7 @@ if err := factory.ValidateConfig(cfg); err != nil {
 针对不同用例的三个独立入口点：
 
 - **`config.LoadFromFile(path)`**: 仅文件配置加载
-- **`config.LoadFromEnv()`**: 仅环境变量配置加载  
+- **`config.LoadFromEnv()`**: 仅环境变量配置加载
 - **`config.LoadUnified(path)`**: 组合文件 + 环境变量加载（推荐）
 
 #### 3. 配置结构
@@ -101,17 +101,17 @@ type ManagerConfig struct {
 
 #### 5. 默认值
 
-| 字段 | 默认值 | 描述 |
-|------|--------|------|
-| Identity | `hertzbeat-collector-go` | 采集器标识符 |
-| Mode | `public` | 采集器模式 |
-| Collector.Name | `hertzbeat-collector-go` | 采集器服务名称 |
-| Collector.IP | `127.0.0.1` | 采集器绑定地址 |
-| Collector.Port | `8080` | 采集器服务端口 |
-| Manager.Host | `127.0.0.1` | 管理服务器主机 |
-| Manager.Port | `1158` | 管理服务器端口 |
-| Manager.Protocol | `netty` | 通信协议 |
-| Log.Level | `info` | 日志级别 |
+| 字段             | 默认值                   | 描述           |
+| ---------------- | ------------------------ | -------------- |
+| Identity         | `hertzbeat-collector-go` | 采集器标识符   |
+| Mode             | `public`                 | 采集器模式     |
+| Collector.Name   | `hertzbeat-collector-go` | 采集器服务名称 |
+| Collector.IP     | `127.0.0.1`              | 采集器绑定地址 |
+| Collector.Port   | `8080`                   | 采集器服务端口 |
+| Manager.Host     | `127.0.0.1`              | 管理服务器主机 |
+| Manager.Port     | `1158`                   | 管理服务器端口 |
+| Manager.Protocol | `netty`                  | 通信协议       |
+| Log.Level        | `info`                   | 日志级别       |
 
 ### 从旧配置迁移
 
@@ -239,17 +239,17 @@ docker run -d \
 
 #### 支持的环境变量
 
-| 环境变量 | 描述 | 默认值 |
-|---------|------|--------|
-| `IDENTITY` | 采集器身份 | `hertzbeat-collector-go` |
-| `MODE` | 采集器模式（`public`/`private`） | `public` |
-| `COLLECTOR_NAME` | 采集器名称 | `hertzbeat-collector-go` |
-| `COLLECTOR_IP` | 采集器绑定 IP | `127.0.0.1` |
-| `COLLECTOR_PORT` | 采集器绑定端口 | `8080` |
-| `MANAGER_HOST` | 管理服务器主机 | `127.0.0.1` |
-| `MANAGER_PORT` | 管理服务器端口 | `1158` |
-| `MANAGER_PROTOCOL` | 协议（`netty`/`grpc`） | `netty` |
-| `LOG_LEVEL` | 日志级别 | `info` |
+| 环境变量           | 描述                             | 默认值                   |
+| ------------------ | -------------------------------- | ------------------------ |
+| `IDENTITY`         | 采集器身份                       | `hertzbeat-collector-go` |
+| `MODE`             | 采集器模式（`public`/`private`） | `public`                 |
+| `COLLECTOR_NAME`   | 采集器名称                       | `hertzbeat-collector-go` |
+| `COLLECTOR_IP`     | 采集器绑定 IP                    | `127.0.0.1`              |
+| `COLLECTOR_PORT`   | 采集器绑定端口                   | `8080`                   |
+| `MANAGER_HOST`     | 管理服务器主机                   | `127.0.0.1`              |
+| `MANAGER_PORT`     | 管理服务器端口                   | `1158`                   |
+| `MANAGER_PROTOCOL` | 协议（`netty`/`grpc`）           | `netty`                  |
+| `LOG_LEVEL`        | 日志级别                         | `info`                   |
 
 ### 3. 示例
 
@@ -268,6 +268,7 @@ docker run -d \
 Go 采集器支持两种通信协议：
 
 1. **Netty 协议**（推荐用于 Java 服务器兼容性）
+
    - 使用长度前缀的 protobuf 消息格式
    - 与 Java Netty 服务器实现兼容
    - 默认端口：1158
@@ -294,7 +295,7 @@ collector:
   log:
     level: debug
 
-  # 管理器/传输配置  
+  # 管理器/传输配置
   manager:
     host: 127.0.0.1
     port: 1158
@@ -313,7 +314,7 @@ collector:
 
    ```go
    import "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
-   
+
    cfg, err := config.LoadFromFile("etc/hertzbeat-collector.yaml")
    if err != nil {
        log.Fatal("配置加载失败:", err)
@@ -324,7 +325,7 @@ collector:
 
    ```go
    import "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
-   
+
    cfg := config.LoadFromEnv()
    ```
 
@@ -332,7 +333,7 @@ collector:
 
    ```go
    import "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
-   
+
    // 环境变量覆盖文件值
    cfg, err := config.LoadUnified("etc/hertzbeat-collector.yaml")
    if err != nil {
@@ -366,10 +367,10 @@ func main() {
 
     // 使用统一配置创建传输运行器
     runner := transport.New(cfg)
-    
+
     ctx, cancel := context.WithCancel(context.Background())
     defer cancel()
-    
+
     // 在后台启动传输
     go func() {
         if err := runner.Start(ctx); err != nil {
@@ -377,14 +378,14 @@ func main() {
             cancel()
         }
     }()
-    
+
     // 等待关闭信号
     sigChan := make(chan os.Signal, 1)
     signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
     <-sigChan
-    
+
     log.Println("正在关闭...")
-    
+
     if err := runner.Close(); err != nil {
         log.Printf("关闭传输失败: %v", err)
     }
@@ -411,13 +412,13 @@ func main() {
     if err != nil {
         log.Fatal("创建客户端失败：", err)
     }
-    
+
     // 启动客户端
     if err := client.Start(); err != nil {
         log.Fatal("启动客户端失败：", err)
     }
     defer client.Shutdown()
-    
+
     // 注册消息处理器
     client.RegisterProcessor(100, func(msg interface{}) (interface{}, error) {
         if pbMsg, ok := msg.(*pb.Message); ok {
@@ -431,7 +432,7 @@ func main() {
         }
         return nil, nil
     })
-    
+
     // 发送心跳消息
     heartbeat := &pb.Message{
         Type:      pb.MessageType_HEARTBEAT,
@@ -439,12 +440,12 @@ func main() {
         Identity:  "go-collector",
         Msg:       []byte("heartbeat"),
     }
-    
+
     // 异步发送
     if err := client.SendMsg(heartbeat); err != nil {
         log.Printf("发送消息失败： %v", err)
     }
-    
+
     // 同步发送，带超时
     resp, err := client.SendMsgSync(heartbeat, 5000)
     if err != nil {
@@ -461,15 +462,15 @@ func main() {
 
 Go 采集器支持 Java 版本中定义的所有消息类型：
 
-| 消息类型 | 值 | 描述 |
-|----------|-----|------|
-| HEARTBEAT | 0 | 心跳/健康检查 |
-| GO_ONLINE | 1 | 采集器上线通知 |
-| GO_OFFLINE | 2 | 采集器下线通知 |
-| GO_CLOSE | 3 | 采集器关闭通知 |
-| ISSUE_CYCLIC_TASK | 4 | 发布周期性采集任务 |
-| DELETE_CYCLIC_TASK | 5 | 删除周期性采集任务 |
-| ISSUE_ONE_TIME_TASK | 6 | 发布一次性采集任务 |
+| 消息类型            | 值  | 描述               |
+| ------------------- | --- | ------------------ |
+| HEARTBEAT           | 0   | 心跳/健康检查      |
+| GO_ONLINE           | 1   | 采集器上线通知     |
+| GO_OFFLINE          | 2   | 采集器下线通知     |
+| GO_CLOSE            | 3   | 采集器关闭通知     |
+| ISSUE_CYCLIC_TASK   | 4   | 发布周期性采集任务 |
+| DELETE_CYCLIC_TASK  | 5   | 删除周期性采集任务 |
+| ISSUE_ONE_TIME_TASK | 6   | 发布一次性采集任务 |
 
 ### 连接管理
 
@@ -498,18 +499,21 @@ Go 采集器实现提供了与 Java 版本的全面兼容性：
 #### ✅ **完全实现的功能**
 
 1. **传输层兼容性**
+
    - **Netty 协议**：使用长度前缀消息格式的完整实现
    - **gRPC 协议**：完整的 gRPC 服务实现，支持双向流式通信
    - **消息类型**：支持所有核心消息类型（HEARTBEAT、GO_ONLINE、GO_OFFLINE 等）
    - **请求/响应模式**：正确处理同步和异步通信
 
 2. **连接管理**
+
    - **自动重连**：连接丢失时的强大重连逻辑
    - **连接监控**：带截止时间管理的后台健康检查
    - **事件系统**：连接状态变更的全面事件处理
    - **心跳机制**：用于连接维护的定期心跳消息
 
 3. **消息处理**
+
    - **处理器注册**：动态消息处理器注册和分发
    - **响应关联**：使用身份字段正确请求-响应匹配
    - **错误处理**：整个消息管道中的全面错误处理
@@ -523,11 +527,13 @@ Go 采集器实现提供了与 Java 版本的全面兼容性：
 #### ⚠️ **改进领域**
 
 1. **任务处理逻辑**
+
    - 当前实现为任务处理返回占位符响应
    - 需要根据具体要求实现实际采集逻辑
    - 任务调度和执行引擎需要集成
 
 2. **配置管理**
+
    - 配置文件格式需要与 Java 版本标准化
    - 环境变量支持可以增强
    - 可以添加动态配置重载
@@ -570,13 +576,13 @@ Go 采集器实现提供了与 Java 版本的全面兼容性：
        future := NewResponseFuture()
        c.responseTable[pbMsg.Identity] = future
        defer delete(c.responseTable, pbMsg.Identity)
-       
+
        // 发送消息
        if err := c.writeMessage(pbMsg); err != nil {
            future.PutError(err)
            return nil, err
        }
-       
+
        // 等待带超时的响应
        return future.Wait(time.Duration(timeoutMillis) * time.Millisecond)
    }
@@ -610,12 +616,14 @@ Go 实现实现了与 Java 版本的**高度兼容性**：
 #### 📋 **建议**
 
 1. **生产使用**：
+
    - 根据具体监控要求实现实际任务处理逻辑
    - 添加全面的日志记录和监控
    - 实现配置验证和管理
    - 添加与 Java 服务器的集成测试
 
 2. **开发使用**：
+
    - 当前实现提供了坚实的基础
    - 所有核心通信模式都已正确实现
    - 协议兼容性得到了彻底解决

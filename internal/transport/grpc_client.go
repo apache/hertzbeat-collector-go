@@ -25,7 +25,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
-	pb "hertzbeat.apache.org/hertzbeat-collector-go/api/cluster_msg"
+	pb "hertzbeat.apache.org/hertzbeat-collector-go/api"
 )
 
 // ResponseFuture represents a future response for sync calls
@@ -81,23 +81,23 @@ type EventHandler func(event Event)
 
 // GrpcClient implements TransportClient using gRPC.
 type GrpcClient struct {
-	conn         *grpc.ClientConn
-	client       pb.ClusterMsgServiceClient
-	addr         string
-	started      bool
-	mu           sync.RWMutex
-	registry     *ProcessorRegistry
+	conn          *grpc.ClientConn
+	client        pb.ClusterMsgServiceClient
+	addr          string
+	started       bool
+	mu            sync.RWMutex
+	registry      *ProcessorRegistry
 	responseTable map[string]*ResponseFuture
-	eventHandler EventHandler
-	cancel       context.CancelFunc
+	eventHandler  EventHandler
+	cancel        context.CancelFunc
 }
 
 func NewGrpcClient(addr string) *GrpcClient {
 	return &GrpcClient{
-		addr:           addr,
-		registry:       NewProcessorRegistry(),
-		responseTable:  make(map[string]*ResponseFuture),
-		eventHandler:   defaultEventHandler,
+		addr:          addr,
+		registry:      NewProcessorRegistry(),
+		responseTable: make(map[string]*ResponseFuture),
+		eventHandler:  defaultEventHandler,
 	}
 }
 
@@ -128,10 +128,10 @@ func (c *GrpcClient) Start() error {
 	if c.started {
 		return nil
 	}
-	
+
 	_, cancel := context.WithCancel(context.Background())
 	c.cancel = cancel
-	
+
 	conn, err := grpc.Dial(c.addr, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		c.triggerEvent(EventConnectFailed, err)
@@ -140,9 +140,9 @@ func (c *GrpcClient) Start() error {
 	c.conn = conn
 	c.client = pb.NewClusterMsgServiceClient(conn)
 	c.started = true
-	
+
 	c.triggerEvent(EventConnected, nil)
-	
+
 	go c.heartbeatLoop()
 	go c.connectionMonitor()
 	go c.streamMsgLoop()
@@ -152,11 +152,11 @@ func (c *GrpcClient) Start() error {
 func (c *GrpcClient) Shutdown() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	if c.cancel != nil {
 		c.cancel()
 	}
-	
+
 	if c.conn != nil {
 		_ = c.conn.Close()
 	}
@@ -192,34 +192,34 @@ func (c *GrpcClient) SendMsgSync(msg interface{}, timeoutMillis int) (interface{
 	if !ok {
 		return nil, nil
 	}
-	
+
 	// Use the existing identity as correlation ID
 	// If empty, generate a new one
 	if pbMsg.Identity == "" {
 		pbMsg.Identity = generateCorrelationID()
 	}
-	
+
 	// Create response future for this request
 	future := NewResponseFuture()
 	c.responseTable[pbMsg.Identity] = future
 	defer delete(c.responseTable, pbMsg.Identity)
-	
+
 	// Send message
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutMillis)*time.Millisecond)
 	defer cancel()
-	
+
 	resp, err := c.client.SendMsg(ctx, pbMsg)
 	if err != nil {
 		future.PutError(err)
 		return nil, err
 	}
-	
+
 	// Check if this is a response to our request
 	if resp != nil && resp.Identity == pbMsg.Identity {
 		future.PutResponse(resp)
 		return resp, nil
 	}
-	
+
 	// If no immediate response, wait for async response
 	return future.Wait(time.Duration(timeoutMillis) * time.Millisecond)
 }
@@ -273,7 +273,7 @@ func (c *GrpcClient) streamMsgLoop() {
 		log.Printf("streamMsgLoop error: %v", err)
 		return
 	}
-	
+
 	// Start receiving messages
 	go func() {
 		for c.IsStarted() {
@@ -282,12 +282,12 @@ func (c *GrpcClient) streamMsgLoop() {
 				log.Printf("streamMsgLoop recv error: %v", err)
 				return
 			}
-			
+
 			// Process the received message
 			c.processReceivedMessage(in)
 		}
 	}()
-	
+
 	// Keep the stream open
 	<-ctx.Done()
 }
@@ -300,7 +300,7 @@ func (c *GrpcClient) processReceivedMessage(msg *pb.Message) {
 			return
 		}
 	}
-	
+
 	// If not a sync response, distribute to registered processors
 	if fn, ok := c.registry.Get(int32(msg.Type)); ok {
 		go fn(msg)

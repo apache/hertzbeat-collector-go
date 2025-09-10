@@ -20,20 +20,20 @@ package transport
 import (
 	"fmt"
 
-	pb "hertzbeat.apache.org/hertzbeat-collector-go/api/cluster_msg"
+	pb "hertzbeat.apache.org/hertzbeat-collector-go/api"
 )
 
 // Message type constants matching Java version
 const (
-	MessageTypeHeartbeat       int32 = 0
-	MessageTypeGoOnline        int32 = 1
-	MessageTypeGoOffline       int32 = 2
-	MessageTypeGoClose         int32 = 3
-	MessageTypeIssueCyclicTask int32 = 4
-	MessageTypeDeleteCyclicTask int32 = 5
-	MessageTypeIssueOneTimeTask int32 = 6
-	MessageTypeResponseCyclicTaskData int32 = 7
-	MessageTypeResponseOneTimeTaskData int32 = 8
+	MessageTypeHeartbeat                int32 = 0
+	MessageTypeGoOnline                 int32 = 1
+	MessageTypeGoOffline                int32 = 2
+	MessageTypeGoClose                  int32 = 3
+	MessageTypeIssueCyclicTask          int32 = 4
+	MessageTypeDeleteCyclicTask         int32 = 5
+	MessageTypeIssueOneTimeTask         int32 = 6
+	MessageTypeResponseCyclicTaskData   int32 = 7
+	MessageTypeResponseOneTimeTaskData  int32 = 8
 	MessageTypeResponseCyclicTaskSdData int32 = 9
 )
 
