@@ -29,7 +29,122 @@ HertzBeat-Collector-Go 是 [Apache HertzBeat](https://github.com/apache/hertzbea
 └── README-CN.md        # 项目说明（中文）
 ```
 
-## 🚀 快速开始
+## � 配置架构
+
+### 统一配置系统
+
+采集器实现了统一配置系统，包含三个主要组件：
+
+#### 1. ConfigFactory（配置工厂）
+
+中央配置工厂提供：
+
+- 默认值管理
+- 环境变量处理
+- 配置验证
+- 配置操作工具方法
+
+```go
+// 创建带默认值的配置
+factory := config.NewConfigFactory()
+cfg := factory.CreateDefaultConfig()
+
+// 从环境变量创建配置
+envCfg := factory.CreateFromEnv()
+
+// 合并文件配置与环境变量覆盖
+mergedCfg := factory.MergeWithEnv(fileCfg)
+
+// 验证配置
+if err := factory.ValidateConfig(cfg); err != nil {
+    log.Fatal("配置无效:", err)
+}
+```
+
+#### 2. 配置入口点
+
+针对不同用例的三个独立入口点：
+
+- **`config.LoadFromFile(path)`**: 仅文件配置加载
+- **`config.LoadFromEnv()`**: 仅环境变量配置加载  
+- **`config.LoadUnified(path)`**: 组合文件 + 环境变量加载（推荐）
+
+#### 3. 配置结构
+
+```go
+type CollectorConfig struct {
+    Collector CollectorSection `yaml:"collector"`
+}
+
+type CollectorSection struct {
+    Info     CollectorInfo     `yaml:"info"`
+    Log      CollectorLogConfig `yaml:"log"`
+    Manager  ManagerConfig     `yaml:"manager"`
+    Identity string           `yaml:"identity"`
+    Mode     string           `yaml:"mode"`
+}
+
+type ManagerConfig struct {
+    Host     string `yaml:"host"`
+    Port     string `yaml:"port"`
+    Protocol string `yaml:"protocol"`
+}
+```
+
+#### 4. 配置验证
+
+系统包含全面的验证：
+
+- **必需字段**: 身份、模式、管理器主机/端口
+- **值验证**: 端口号、协议类型、模式值
+- **格式验证**: IP 地址、日志级别
+
+#### 5. 默认值
+
+| 字段 | 默认值 | 描述 |
+|------|--------|------|
+| Identity | `hertzbeat-collector-go` | 采集器标识符 |
+| Mode | `public` | 采集器模式 |
+| Collector.Name | `hertzbeat-collector-go` | 采集器服务名称 |
+| Collector.IP | `127.0.0.1` | 采集器绑定地址 |
+| Collector.Port | `8080` | 采集器服务端口 |
+| Manager.Host | `127.0.0.1` | 管理服务器主机 |
+| Manager.Port | `1158` | 管理服务器端口 |
+| Manager.Protocol | `netty` | 通信协议 |
+| Log.Level | `info` | 日志级别 |
+
+### 从旧配置迁移
+
+如果您有现有配置，以下是迁移方法：
+
+#### 旧格式 (transport.yaml)
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 1158
+transport:
+  protocol: "netty"
+  server_addr: "127.0.0.1:1158"
+```
+
+#### 新格式 (hertzbeat-collector.yaml)
+
+```yaml
+collector:
+  info:
+    name: hertzbeat-collector-go
+    ip: 0.0.0.0
+    port: 8080
+  manager:
+    host: 127.0.0.1
+    port: 1158
+    protocol: netty
+  identity: hertzbeat-collector-go
+  mode: public
+```
+
+## �🚀 快速开始
 
 ### 1. 构建和运行
 
@@ -44,27 +159,97 @@ make build
 ./bin/collector server --config etc/hertzbeat-collector.yaml
 ```
 
-### 2. 环境变量配置（Docker 兼容）
+### 2. 配置选项
+
+采集器支持多种配置方法，具有统一的配置系统：
+
+#### 基于文件的配置
+
+```bash
+# 使用配置文件运行
+./bin/collector server --config etc/hertzbeat-collector.yaml
+```
+
+配置文件示例（`etc/hertzbeat-collector.yaml`）：
+
+```yaml
+collector:
+  info:
+    name: hertzbeat-collector-go
+    ip: 127.0.0.1
+    port: 8080
+
+  log:
+    level: debug
+
+  # 管理器/传输配置
+  manager:
+    host: 127.0.0.1
+    port: 1158
+    protocol: netty
+
+  # 采集器身份和模式
+  identity: hertzbeat-collector-go
+  mode: public
+```
+
+#### 环境变量配置（Docker 兼容）
 
 Go 版本完全兼容 Java 版本的环境变量配置：
 
 ```bash
 # 设置环境变量
-export IDENTITY=本地
+export IDENTITY=local
+export COLLECTOR_NAME=hertzbeat-collector-go
+export COLLECTOR_IP=127.0.0.1
+export COLLECTOR_PORT=8080
 export MANAGER_HOST=192.168.97.0
+export MANAGER_PORT=1158
+export MANAGER_PROTOCOL=grpc
 export MODE=public
+export LOG_LEVEL=info
 
 # 使用环境变量运行
-go run examples/main.go
+./bin/collector server
 
 # 或使用 Docker
 docker run -d \
-    -e IDENTITY=本地 \
+    -e IDENTITY=local \
     -e MANAGER_HOST=192.168.97.0 \
+    -e MANAGER_PORT=1158 \
+    -e MANAGER_PROTOCOL=grpc \
     -e MODE=public \
     --name hertzbeat-collector-go \
     hertzbeat-collector-go
 ```
+
+#### 统一配置（推荐）
+
+采集器使用统一配置系统，支持文件和环境变量配置：
+
+- **文件 + 环境变量**：环境变量覆盖文件设置
+- **仅环境变量**：纯环境变量配置
+- **仅文件**：纯基于文件的配置
+
+配置优先级（从高到低）：
+
+1. 环境变量
+2. 配置文件值
+3. 内置默认值
+
+#### 支持的环境变量
+
+| 环境变量 | 描述 | 默认值 |
+|---------|------|--------|
+| `IDENTITY` | 采集器身份 | `hertzbeat-collector-go` |
+| `MODE` | 采集器模式（`public`/`private`） | `public` |
+| `COLLECTOR_NAME` | 采集器名称 | `hertzbeat-collector-go` |
+| `COLLECTOR_IP` | 采集器绑定 IP | `127.0.0.1` |
+| `COLLECTOR_PORT` | 采集器绑定端口 | `8080` |
+| `MANAGER_HOST` | 管理服务器主机 | `127.0.0.1` |
+| `MANAGER_PORT` | 管理服务器端口 | `1158` |
+| `MANAGER_PROTOCOL` | 协议（`netty`/`grpc`） | `netty` |
+| `LOG_LEVEL` | 日志级别 | `info` |
 
 ### 3. 示例
 
@@ -96,18 +281,64 @@ Go 采集器支持两种通信协议：
 
 #### 基础配置
 
+采集器通过多种入口点支持灵活配置：
+
 ```yaml
 # etc/hertzbeat-collector.yaml
-server:
-  host: "0.0.0.0"
-  port: 1158
+collector:
+  info:
+    name: hertzbeat-collector-go
+    ip: 127.0.0.1
+    port: 8080
 
-transport:
-  protocol: "netty"          # "netty" 或 "grpc"
-  server_addr: "127.0.0.1:1158"  # Java 管理服务器地址
-  timeout: 5000              # 连接超时时间（毫秒）
-  heartbeat_interval: 10     # 心跳间隔（秒）
+  log:
+    level: debug
+
+  # 管理器/传输配置  
+  manager:
+    host: 127.0.0.1
+    port: 1158
+    protocol: netty
+
+  # 采集器身份和模式
+  identity: hertzbeat-collector-go
+  mode: public
 ```
+
+#### 配置加载方法
+
+采集器提供三种配置加载方法：
+
+1. **仅文件配置**：
+
+   ```go
+   import "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
+   
+   cfg, err := config.LoadFromFile("etc/hertzbeat-collector.yaml")
+   if err != nil {
+       log.Fatal("配置加载失败:", err)
+   }
+   ```
+
+2. **仅环境变量配置**：
+
+   ```go
+   import "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
+   
+   cfg := config.LoadFromEnv()
+   ```
+
+3. **统一配置（推荐）**：
+
+   ```go
+   import "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
+   
+   // 环境变量覆盖文件值
+   cfg, err := config.LoadUnified("etc/hertzbeat-collector.yaml")
+   if err != nil {
+       log.Fatal("配置加载失败:", err)
+   }
+   ```
 
 #### 连接 Java 服务器
 
@@ -122,28 +353,19 @@ import (
     "syscall"
     "time"
 
-    clrServer "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
-    transport2 "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/transport"
-    loggerUtil "hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
-    loggerTypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+    "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
+    "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/transport"
 )
 
 func main() {
-    // 创建日志记录器
-    logging := loggerTypes.DefaultHertzbeatLogging()
-    appLogger := loggerUtil.DefaultLogger(os.Stdout, logging.Level[loggerTypes.LogComponentHertzbeatDefault])
-
-    // 创建 Java 服务器的传输配置
-    config := &transport2.Config{
-        Server: clrServer.Server{
-            Logger: appLogger,
-        },
-        ServerAddr: "127.0.0.1:1158",  // Java 管理服务器地址
-        Protocol:   "netty",           // 使用 netty 协议以实现 Java 兼容性
+    // 使用统一加载器加载配置（文件 + 环境变量）
+    cfg, err := config.LoadUnified("etc/hertzbeat-collector.yaml")
+    if err != nil {
+        log.Fatal("配置加载失败:", err)
     }
 
-    // 创建并启动传输运行器
-    runner := transport2.New(config)
+    // 使用统一配置创建传输运行器
+    runner := transport.New(cfg)
     
     ctx, cancel := context.WithCancel(context.Background())
     defer cancel()
@@ -151,7 +373,7 @@ func main() {
     // 在后台启动传输
     go func() {
         if err := runner.Start(ctx); err != nil {
-            appLogger.Error(err, "启动传输失败")
+            log.Printf("启动传输失败: %v", err)
             cancel()
         }
     }()
@@ -161,11 +383,10 @@ func main() {
     signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
     <-sigChan
     
-    appLogger.Info("正在关闭...")
-    time.Sleep(5 * time.Second)
+    log.Println("正在关闭...")
     
     if err := runner.Close(); err != nil {
-        appLogger.Error(err, "关闭传输失败")
+        log.Printf("关闭传输失败: %v", err)
     }
 }
 ```

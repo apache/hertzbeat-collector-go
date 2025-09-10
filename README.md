@@ -29,7 +29,122 @@ HertzBeat-Collector-Go is the Go implementation of the collector for [Apache Her
 └── README.md           # Project description
 ```
 
-## 🚀 Quick Start
+## � Configuration Architecture
+
+### Unified Configuration System
+
+The collector implements a unified configuration system with three main components:
+
+#### 1. ConfigFactory
+
+Central configuration factory that provides:
+
+- Default values management
+- Environment variable processing
+- Configuration validation
+- Utility methods for configuration manipulation
+
+```go
+// Create configuration with defaults
+factory := config.NewConfigFactory()
+cfg := factory.CreateDefaultConfig()
+
+// Create from environment variables
+envCfg := factory.CreateFromEnv()
+
+// Merge file config with environment overrides
+mergedCfg := factory.MergeWithEnv(fileCfg)
+
+// Validate configuration
+if err := factory.ValidateConfig(cfg); err != nil {
+    log.Fatal("Invalid configuration:", err)
+}
+```
+
+#### 2. Configuration Entry Points
+
+Three distinct entry points for different use cases:
+
+- **`config.LoadFromFile(path)`**: File-only configuration loading
+- **`config.LoadFromEnv()`**: Environment-only configuration loading  
+- **`config.LoadUnified(path)`**: Combined file + environment loading (recommended)
+
+#### 3. Configuration Structure
+
+```go
+type CollectorConfig struct {
+    Collector CollectorSection `yaml:"collector"`
+}
+
+type CollectorSection struct {
+    Info     CollectorInfo     `yaml:"info"`
+    Log      CollectorLogConfig `yaml:"log"`
+    Manager  ManagerConfig     `yaml:"manager"`
+    Identity string           `yaml:"identity"`
+    Mode     string           `yaml:"mode"`
+}
+
+type ManagerConfig struct {
+    Host     string `yaml:"host"`
+    Port     string `yaml:"port"`
+    Protocol string `yaml:"protocol"`
+}
+```
+
+#### 4. Configuration Validation
+
+The system includes comprehensive validation:
+
+- **Required fields**: Identity, mode, manager host/port
+- **Value validation**: Port numbers, protocol types, mode values
+- **Format validation**: IP addresses, log levels
+
+#### 5. Default Values
+
+| Field | Default Value | Description |
+|-------|---------------|-------------|
+| Identity | `hertzbeat-collector-go` | Collector identifier |
+| Mode | `public` | Collector mode |
+| Collector.Name | `hertzbeat-collector-go` | Collector service name |
+| Collector.IP | `127.0.0.1` | Collector bind address |
+| Collector.Port | `8080` | Collector service port |
+| Manager.Host | `127.0.0.1` | Manager server host |
+| Manager.Port | `1158` | Manager server port |
+| Manager.Protocol | `netty` | Communication protocol |
+| Log.Level | `info` | Logging level |
+
+### Migration from Legacy Configuration
+
+If you have existing configurations, here's how to migrate:
+
+#### Legacy Format (transport.yaml)
+
+```yaml
+server:
+  host: "0.0.0.0"
+  port: 1158
+transport:
+  protocol: "netty"
+  server_addr: "127.0.0.1:1158"
+```
+
+#### New Format (hertzbeat-collector.yaml)
+
+```yaml
+collector:
+  info:
+    name: hertzbeat-collector-go
+    ip: 0.0.0.0
+    port: 8080
+  manager:
+    host: 127.0.0.1
+    port: 1158
+    protocol: netty
+  identity: hertzbeat-collector-go
+  mode: public
+```
+
+## �🚀 Quick Start
 
 ### 1. Build and Run
 
@@ -44,27 +159,97 @@ make build
 ./bin/collector server --config etc/hertzbeat-collector.yaml
 ```
 
-### 2. Environment Variables (Docker Compatible)
+### 2. Configuration Options
+
+The collector supports multiple configuration methods with a unified configuration system:
+
+#### File-based Configuration
+
+```bash
+# Run with configuration file
+./bin/collector server --config etc/hertzbeat-collector.yaml
+```
+
+Example configuration file (`etc/hertzbeat-collector.yaml`):
+
+```yaml
+collector:
+  info:
+    name: hertzbeat-collector-go
+    ip: 127.0.0.1
+    port: 8080
+
+  log:
+    level: debug
+
+  # Manager/Transport configuration
+  manager:
+    host: 127.0.0.1
+    port: 1158
+    protocol: netty
+
+  # Collector identity and mode
+  identity: hertzbeat-collector-go
+  mode: public
+```
+
+#### Environment Variables (Docker Compatible)
 
 The Go version is fully compatible with the Java version's environment variable configuration:
 
 ```bash
 # Set environment variables
 export IDENTITY=local
+export COLLECTOR_NAME=hertzbeat-collector-go
+export COLLECTOR_IP=127.0.0.1
+export COLLECTOR_PORT=8080
 export MANAGER_HOST=192.168.97.0
+export MANAGER_PORT=1158
+export MANAGER_PROTOCOL=grpc
 export MODE=public
+export LOG_LEVEL=info
 
 # Run with environment variables
-go run examples/main.go
+./bin/collector server
 
 # Or use Docker
 docker run -d \
     -e IDENTITY=local \
     -e MANAGER_HOST=192.168.97.0 \
+    -e MANAGER_PORT=1158 \
+    -e MANAGER_PROTOCOL=grpc \
     -e MODE=public \
     --name hertzbeat-collector-go \
     hertzbeat-collector-go
 ```
+
+#### Unified Configuration (Recommended)
+
+The collector uses a unified configuration system that supports both file and environment variable configurations:
+
+- **File + Environment**: Environment variables override file settings
+- **Environment Only**: Pure environment variable configuration
+- **File Only**: Pure file-based configuration
+
+Configuration precedence (highest to lowest):
+
+1. Environment variables
+2. Configuration file values
+3. Built-in defaults
+
+#### Supported Environment Variables
+
+| Environment Variable | Description | Default Value |
+|---------------------|-------------|---------------|
+| `IDENTITY` | Collector identity | `hertzbeat-collector-go` |
+| `MODE` | Collector mode (`public`/`private`) | `public` |
+| `COLLECTOR_NAME` | Collector name | `hertzbeat-collector-go` |
+| `COLLECTOR_IP` | Collector bind IP | `127.0.0.1` |
+| `COLLECTOR_PORT` | Collector bind port | `8080` |
+| `MANAGER_HOST` | Manager server host | `127.0.0.1` |
+| `MANAGER_PORT` | Manager server port | `1158` |
+| `MANAGER_PROTOCOL` | Protocol (`netty`/`grpc`) | `netty` |
+| `LOG_LEVEL` | Log level | `info` |
 
 ### 3. Examples
 
@@ -96,18 +281,64 @@ The Go collector supports two communication protocols:
 
 #### Basic Configuration
 
+The collector supports flexible configuration through multiple entry points:
+
 ```yaml
 # etc/hertzbeat-collector.yaml
-server:
-  host: "0.0.0.0"
-  port: 1158
+collector:
+  info:
+    name: hertzbeat-collector-go
+    ip: 127.0.0.1
+    port: 8080
 
-transport:
-  protocol: "netty"          # "netty" or "grpc"
-  server_addr: "127.0.0.1:1158"  # Java manager server address
-  timeout: 5000              # Connection timeout in milliseconds
-  heartbeat_interval: 10     # Heartbeat interval in seconds
+  log:
+    level: debug
+
+  # Manager/Transport configuration  
+  manager:
+    host: 127.0.0.1
+    port: 1158
+    protocol: netty
+
+  # Collector identity and mode
+  identity: hertzbeat-collector-go
+  mode: public
 ```
+
+#### Configuration Loading Methods
+
+The collector provides three configuration loading methods:
+
+1. **File-only Configuration**:
+
+   ```go
+   import "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
+   
+   cfg, err := config.LoadFromFile("etc/hertzbeat-collector.yaml")
+   if err != nil {
+       log.Fatal("Failed to load config:", err)
+   }
+   ```
+
+2. **Environment-only Configuration**:
+
+   ```go
+   import "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
+   
+   cfg := config.LoadFromEnv()
+   ```
+
+3. **Unified Configuration (Recommended)**:
+
+   ```go
+   import "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
+   
+   // Environment variables override file values
+   cfg, err := config.LoadUnified("etc/hertzbeat-collector.yaml")
+   if err != nil {
+       log.Fatal("Failed to load config:", err)
+   }
+   ```
 
 #### Connecting to Java Server
 
@@ -122,28 +353,19 @@ import (
     "syscall"
     "time"
 
-    clrServer "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
-    transport2 "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/transport"
-    loggerUtil "hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
-    loggerTypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+    "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
+    "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/transport"
 )
 
 func main() {
-    // Create logger
-    logging := loggerTypes.DefaultHertzbeatLogging()
-    appLogger := loggerUtil.DefaultLogger(os.Stdout, logging.Level[loggerTypes.LogComponentHertzbeatDefault])
-
-    // Create transport configuration for Java server
-    config := &transport2.Config{
-        Server: clrServer.Server{
-            Logger: appLogger,
-        },
-        ServerAddr: "127.0.0.1:1158",  // Java manager server address
-        Protocol:   "netty",           // Use netty protocol for Java compatibility
+    // Load configuration using unified loader (file + env)
+    cfg, err := config.LoadUnified("etc/hertzbeat-collector.yaml")
+    if err != nil {
+        log.Fatal("Failed to load configuration:", err)
     }
 
-    // Create and start transport runner
-    runner := transport2.New(config)
+    // Create transport runner with unified config
+    runner := transport.New(cfg)
     
     ctx, cancel := context.WithCancel(context.Background())
     defer cancel()
@@ -151,7 +373,7 @@ func main() {
     // Start transport in background
     go func() {
         if err := runner.Start(ctx); err != nil {
-            appLogger.Error(err, "Failed to start transport")
+            log.Printf("Failed to start transport: %v", err)
             cancel()
         }
     }()
@@ -161,11 +383,10 @@ func main() {
     signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
     <-sigChan
     
-    appLogger.Info("Shutting down...")
-    time.Sleep(5 * time.Second)
+    log.Println("Shutting down...")
     
     if err := runner.Close(); err != nil {
-        appLogger.Error(err, "Failed to close transport")
+        log.Printf("Failed to close transport: %v", err)
     }
 }
 ```
