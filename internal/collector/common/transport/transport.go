@@ -32,6 +32,17 @@ import (
 	pb "hertzbeat.apache.org/hertzbeat-collector-go/api/cluster_msg"
 )
 
+const (
+	// DefaultManagerAddr is the default manager server address (Java Netty default port)
+	DefaultManagerAddr = "127.0.0.1:1158"
+	// DefaultProtocol is the default communication protocol for Java compatibility
+	DefaultProtocol = "netty"
+	// DefaultMode is the default operation mode
+	DefaultMode = "public"
+	// DefaultIdentity is the default collector identity
+	DefaultIdentity = "collector-go"
+)
+
 type Config struct {
 	clrServer.Server
 	// 可扩展更多配置
@@ -44,7 +55,6 @@ type Config struct {
 type Runner struct {
 	Config
 	client     transport.TransportClient
-	cancel     context.CancelFunc
 }
 
 func New(srv *Config) *Runner {
@@ -80,6 +90,17 @@ func NewFromEnv() *Runner {
 	return NewFromConfig(cfg)
 }
 
+// NewFromUnifiedConfig creates a new transport runner using unified configuration loading
+// It loads from file first, then overrides with environment variables
+func NewFromUnifiedConfig(cfgPath string) (*Runner, error) {
+	unifiedLoader := config.NewUnifiedConfigLoader(cfgPath)
+	cfg, err := unifiedLoader.Load()
+	if err != nil {
+		return nil, err
+	}
+	return NewFromConfig(cfg), nil
+}
+
 func (r *Runner) Start(ctx context.Context) error {
 	r.Logger = r.Logger.WithName(r.Info().Name).WithValues("runner", r.Info().Name)
 	r.Logger.Info("Starting transport client")
@@ -90,7 +111,7 @@ func (r *Runner) Start(ctx context.Context) error {
 		if v := os.Getenv("MANAGER_ADDR"); v != "" {
 			addr = v
 		} else {
-			addr = "127.0.0.1:1158" // Java版本的默认端口
+			addr = DefaultManagerAddr // Java版本的默认端口
 		}
 	}
 	
@@ -100,7 +121,7 @@ func (r *Runner) Start(ctx context.Context) error {
 		if v := os.Getenv("MANAGER_PROTOCOL"); v != "" {
 			protocol = v
 		} else {
-			protocol = "netty" // 默认使用netty协议
+			protocol = DefaultProtocol // 默认使用netty协议
 		}
 	}
 	
@@ -156,8 +177,9 @@ func (r *Runner) Start(ctx context.Context) error {
 		return err
 	}
 
+	// 创建新的context用于监控关闭信号
 	ctx, cancel := context.WithCancel(ctx)
-	r.cancel = cancel
+	defer cancel()
 
 	// 监听 ctx.Done 优雅关闭
 	go func() {
@@ -176,13 +198,13 @@ func (r *Runner) sendOnlineMessage() {
 		// Use the configured identity instead of hardcoded value
 		identity := r.Identity
 		if identity == "" {
-			identity = "collector-go"
+			identity = DefaultIdentity
 		}
 		
 		// Create CollectorInfo JSON structure as expected by Java server
 		mode := r.Config.Mode
 		if mode == "" {
-			mode = "public" // Default mode as in Java version
+			mode = DefaultMode // Default mode as in Java version
 		}
 		
 		collectorInfo := map[string]interface{}{
@@ -224,9 +246,6 @@ func (r *Runner) Info() collector.Info {
 
 func (r *Runner) Close() error {
 	r.Logger.Info("transport close...")
-	if r.cancel != nil {
-		r.cancel()
-	}
 	if r.client != nil {
 		_ = r.client.Shutdown()
 	}
