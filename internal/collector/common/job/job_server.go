@@ -29,7 +29,7 @@ import (
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect/dispatch"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/dispatcher"
-	clrServer "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
+	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/collector"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
 )
@@ -44,7 +44,7 @@ type TimeDispatcher interface {
 
 // Config represents job service configuration
 type Config struct {
-	clrServer.Server
+	clrserver.Server
 	TimeDispatch TimeDispatcher
 }
 
@@ -53,8 +53,6 @@ type Runner struct {
 	Config
 	mu          sync.RWMutex
 	runningJobs map[int64]*jobtypes.Job
-	ctx         context.Context
-	cancel      context.CancelFunc
 }
 
 // AddAsyncCollectJob adds a job to async collection scheduling
@@ -121,8 +119,6 @@ func (r *Runner) RunningJobs() map[int64]*jobtypes.Job {
 
 // New creates a new job service runner with all components initialized
 func New(srv *Config) *Runner {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	// Create result handler
 	resultHandler := collect.NewResultHandler(srv.Logger)
 
@@ -141,8 +137,6 @@ func New(srv *Config) *Runner {
 	runner := &Runner{
 		Config:      *srv,
 		runningJobs: make(map[int64]*jobtypes.Job),
-		ctx:         ctx,
-		cancel:      cancel,
 	}
 
 	return runner
@@ -191,8 +185,6 @@ func (r *Runner) Info() collector.Info {
 // Close closes the job service runner and all its components
 func (r *Runner) Close() error {
 	r.Logger.Info("closing job service runner")
-
-	r.cancel()
 
 	// Stop time dispatcher
 	if r.TimeDispatch != nil {

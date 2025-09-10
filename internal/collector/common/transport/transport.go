@@ -24,10 +24,10 @@ import (
 	"os"
 
 	pb "hertzbeat.apache.org/hertzbeat-collector-go/api"
-	clrServer "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
+	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/collector"
 	configtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/config"
-	loggerTypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+	loggertypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
 	config "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/transport"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
@@ -47,13 +47,13 @@ const (
 type Runner struct {
 	Config *configtypes.CollectorConfig
 	client transport.TransportClient
-	clrServer.Server
+	clrserver.Server
 }
 
 func New(cfg *configtypes.CollectorConfig) *Runner {
 	return &Runner{
 		Config: cfg,
-		Server: clrServer.Server{
+		Server: clrserver.Server{
 			Logger: logger.Logger{}, // Will be initialized properly in Start method
 		},
 	}
@@ -88,7 +88,7 @@ func NewFromUnifiedConfig(cfgPath string) (*Runner, error) {
 func (r *Runner) Start(ctx context.Context) error {
 	// 初始化 Logger 如果它还没有被设置
 	if r.Logger.IsZero() {
-		r.Logger = logger.DefaultLogger(os.Stdout, loggerTypes.LogLevelInfo)
+		r.Logger = logger.DefaultLogger(os.Stdout, loggertypes.LogLevelInfo)
 	}
 	r.Logger = r.Logger.WithName(r.Info().Name).WithValues("runner", r.Info().Name)
 	r.Logger.Info("Starting transport client")

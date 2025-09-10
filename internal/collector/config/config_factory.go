@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/config"
-	loggerTypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+	loggertypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
@@ -49,7 +49,7 @@ type ConfigFactory struct {
 func NewConfigFactory() *ConfigFactory {
 	return &ConfigFactory{
 		defaults: GetDefaultConfig(),
-		logger:   logger.DefaultLogger(os.Stdout, loggerTypes.LogLevelInfo).WithName("config-factory"),
+		logger:   logger.DefaultLogger(os.Stdout, loggertypes.LogLevelInfo).WithName("config-factory"),
 	}
 }
 

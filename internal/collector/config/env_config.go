@@ -21,7 +21,7 @@ import (
 	"os"
 
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/config"
-	loggerTypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+	loggertypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
@@ -36,7 +36,7 @@ type EnvConfigLoader struct {
 func NewEnvConfigLoader() *EnvConfigLoader {
 	return &EnvConfigLoader{
 		factory: NewConfigFactory(),
-		logger:  logger.DefaultLogger(os.Stdout, loggerTypes.LogLevelInfo).WithName("env-config-loader"),
+		logger:  logger.DefaultLogger(os.Stdout, loggertypes.LogLevelInfo).WithName("env-config-loader"),
 	}
 }
 

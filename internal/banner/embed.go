@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"text/template"
 
-	clrServer "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
+	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
 	bannertypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/err"
 )
 
@@ -31,11 +31,12 @@ import (
 var EmbedLogo embed.FS
 
 type Config struct {
-	clrServer.Server
+	clrserver.Server
 }
 
+// Runner implements the banner display functionality.
 type Runner struct {
-	Config
+	clrserver.Server
 }
 
 type bannerVars struct {
@@ -47,7 +48,7 @@ type bannerVars struct {
 func New(srv *Config) *Runner {
 
 	return &Runner{
-		Config: *srv,
+		Server: srv.Server,
 	}
 }
 

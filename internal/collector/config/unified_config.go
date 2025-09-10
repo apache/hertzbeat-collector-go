@@ -21,7 +21,7 @@ import (
 	"os"
 
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/config"
-	loggerTypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+	loggertypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
@@ -41,7 +41,7 @@ func NewUnifiedConfigLoader(cfgPath string) *UnifiedConfigLoader {
 		fileLoader: New(cfgPath),
 		envLoader:  NewEnvConfigLoader(),
 		factory:    NewConfigFactory(),
-		logger:     logger.DefaultLogger(os.Stdout, loggerTypes.LogLevelInfo).WithName("unified-config-loader"),
+		logger:     logger.DefaultLogger(os.Stdout, loggertypes.LogLevelInfo).WithName("unified-config-loader"),
 	}
 }
 
