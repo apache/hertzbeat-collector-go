@@ -22,11 +22,11 @@ type CollectorConfig struct {
 }
 
 type CollectorSection struct {
-	Info       CollectorInfo       `yaml:"info"`
-	Log        CollectorLogConfig  `yaml:"log"`
-	Manager    ManagerConfig      `yaml:"manager"`
-	Identity   string             `yaml:"identity" env:"IDENTITY"`
-	Mode       string             `yaml:"mode" env:"MODE"`
+	Info     CollectorInfo      `yaml:"info"`
+	Log      CollectorLogConfig `yaml:"log"`
+	Manager  ManagerConfig      `yaml:"manager"`
+	Identity string             `yaml:"identity" env:"IDENTITY"`
+	Mode     string             `yaml:"mode" env:"MODE"`
 	// Add Dispatcher if needed
 }
 
