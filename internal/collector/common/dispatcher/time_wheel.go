@@ -48,7 +48,7 @@ type MetricsTaskDispatcher interface {
 // HashedWheelTimer interface for time wheel operations
 type HashedWheelTimer interface {
 	NewTimeout(task jobtypes.TimerTask, delay time.Duration) *jobtypes.Timeout
-	Start() error
+	Start(ctx context.Context) error
 	Stop() error
 }
 
@@ -142,7 +142,7 @@ func (td *TimeDispatch) Start(ctx context.Context) error {
 	td.logger.Info("starting time dispatcher")
 
 	// Start the wheel timer
-	if err := td.wheelTimer.Start(); err != nil {
+	if err := td.wheelTimer.Start(ctx); err != nil {
 		return fmt.Errorf("failed to start wheel timer: %w", err)
 	}
 

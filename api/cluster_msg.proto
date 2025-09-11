@@ -19,7 +19,7 @@ syntax = "proto3";
 
 package hertzbeat.apache.org.api.msg;
 
-option go_package = "hertzbeat.apache.org/api/msg;cluster_msg";
+option go_package = "hertzbeat.apache.org/hertzbeat-collector-go/api;api";
 option java_package = "org.apache.hertzbeat.api.cluster_msg";
 
 message Message {
@@ -62,3 +62,11 @@ enum Direction {
     // request response
     RESPONSE = 1;
 }
+
+    // gRPC service for collector <-> manager communication
+    service ClusterMsgService {
+        // 单次请求响应
+        rpc SendMsg (Message) returns (Message);
+        // 双向流式通信（可用于实时推送/心跳/任务下发等）
+        rpc StreamMsg (stream Message) returns (stream Message);
+    }

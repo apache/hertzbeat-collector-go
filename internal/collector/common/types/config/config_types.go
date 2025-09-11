@@ -22,8 +22,11 @@ type CollectorConfig struct {
 }
 
 type CollectorSection struct {
-	Info CollectorInfo      `yaml:"info"`
-	Log  CollectorLogConfig `yaml:"log"`
+	Info     CollectorInfo      `yaml:"info"`
+	Log      CollectorLogConfig `yaml:"log"`
+	Manager  ManagerConfig      `yaml:"manager"`
+	Identity string             `yaml:"identity" env:"IDENTITY"`
+	Mode     string             `yaml:"mode" env:"MODE"`
 	// Add Dispatcher if needed
 }
 
@@ -35,4 +38,10 @@ type CollectorInfo struct {
 
 type CollectorLogConfig struct {
 	Level string `yaml:"level"`
+}
+
+type ManagerConfig struct {
+	Host     string `yaml:"host" env:"MANAGER_HOST"`
+	Port     string `yaml:"port" env:"MANAGER_PORT"`
+	Protocol string `yaml:"protocol" env:"MANAGER_PROTOCOL"`
 }

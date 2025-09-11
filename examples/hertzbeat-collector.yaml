@@ -22,14 +22,14 @@ collector:
     port: 8080
 
   log:
-    level: debug
+    level: info
 
-  # Transport/Manager configuration
+  # Manager server configuration
   manager:
     host: 127.0.0.1
     port: 1158
-    protocol: netty
+    protocol: netty  # netty or grpc
 
   # Collector identity and mode
   identity: hertzbeat-collector-go
-  mode: public
+  mode: public  # public or private
