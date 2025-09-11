@@ -1,6 +1,7 @@
 # HertzBeat Collector Go
 
 [![License](https://img.shields.io/badge/license-Apache%202-blue)](LICENSE)
+![Build And Test](https://github.com/apache/hertzbeat-collector-go/workflows/%F0%9F%9B%A0%EF%B8%8F%20Build%20and%20Test/badge.svg)
 
 HertzBeat-Collector-Go 是 [Apache HertzBeat](https://github.com/apache/hertzbeat) 的 Go 语言实现的数据采集器。它支持多协议、多类型的监控数据采集，具有高性能、易扩展、无缝集成的特点。
 
