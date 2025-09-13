@@ -38,11 +38,10 @@ type hashedWheelTimer struct {
 	currentTick  int64
 	startTime    time.Time
 	ticker       *time.Ticker
-	ctx          context.Context
-	cancel       context.CancelFunc
 	started      int32
 	stopped      int32
 	wg           sync.WaitGroup
+	cancel       context.CancelFunc // Only store cancel, not the context itself
 }
 
 // bucket represents a time wheel bucket containing timeouts
@@ -60,15 +59,11 @@ func NewHashedWheelTimer(wheelSize int, tickDuration time.Duration, logger logge
 		tickDuration = 100 * time.Millisecond
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	timer := &hashedWheelTimer{
 		logger:       logger.WithName("hashed-wheel-timer"),
 		tickDuration: tickDuration,
 		wheelSize:    wheelSize,
 		wheel:        make([]*bucket, wheelSize),
-		ctx:          ctx,
-		cancel:       cancel,
 	}
 
 	// Initialize buckets
@@ -114,7 +109,7 @@ func (hwt *hashedWheelTimer) NewTimeout(task jobtypes.TimerTask, delay time.Dura
 }
 
 // Start starts the timer wheel
-func (hwt *hashedWheelTimer) Start() error {
+func (hwt *hashedWheelTimer) Start(ctx context.Context) error {
 	if !atomic.CompareAndSwapInt32(&hwt.started, 0, 1) {
 		return nil // already started
 	}
@@ -126,8 +121,12 @@ func (hwt *hashedWheelTimer) Start() error {
 	hwt.startTime = time.Now()
 	hwt.ticker = time.NewTicker(hwt.tickDuration)
 
+	// Create a cancellable context for this timer
+	ctx, cancel := context.WithCancel(ctx)
+	hwt.cancel = cancel
+
 	hwt.wg.Add(1)
-	go hwt.run()
+	go hwt.run(ctx)
 
 	hwt.logger.Info("hashed wheel timer started")
 	return nil
@@ -154,12 +153,12 @@ func (hwt *hashedWheelTimer) Stop() error {
 }
 
 // run is the main timer loop
-func (hwt *hashedWheelTimer) run() {
+func (hwt *hashedWheelTimer) run(ctx context.Context) {
 	defer hwt.wg.Done()
 
 	for {
 		select {
-		case <-hwt.ctx.Done():
+		case <-ctx.Done():
 			return
 		case <-hwt.ticker.C:
 			hwt.tick()

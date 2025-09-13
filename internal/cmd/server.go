@@ -30,9 +30,8 @@ import (
 	"github.com/spf13/cobra"
 
 	bannerouter "hertzbeat.apache.org/hertzbeat-collector-go/internal/banner"
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic"
 	jobserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/job"
-	clrServer "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
+	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
 	transportserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/transport"
 	collectortypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/collector"
 	configtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/config"
@@ -80,9 +79,9 @@ func getConfigByPath() (*configtypes.CollectorConfig, error) {
 	return cfg, nil
 }
 
-func serverByCfg(cfg *configtypes.CollectorConfig, logOut io.Writer) *clrServer.Server {
+func serverByCfg(cfg *configtypes.CollectorConfig, logOut io.Writer) *clrserver.Server {
 
-	return clrServer.New(cfg, logOut)
+	return clrserver.New(cfg, logOut)
 }
 
 func server(ctx context.Context, logOut io.Writer) error {
@@ -108,13 +107,7 @@ func server(ctx context.Context, logOut io.Writer) error {
 	return startRunners(ctx, collectorServer)
 }
 
-func startRunners(ctx context.Context, cfg *clrServer.Server) error {
-
-	// Initialize all collectors before starting runners
-	// This ensures all protocol collectors are registered and ready
-	cfg.Logger.Info("Initializing collectors...")
-	basic.InitializeAllCollectors(cfg.Logger)
-
+func startRunners(ctx context.Context, cfg *clrserver.Server) error {
 	runners := []struct {
 		runner Runner[collectortypes.Info]
 	}{
@@ -124,9 +117,7 @@ func startRunners(ctx context.Context, cfg *clrServer.Server) error {
 			}),
 		},
 		{
-			transportserver.New(&transportserver.Config{
-				Server: *cfg,
-			}),
+			transportserver.NewFromConfig(cfg.Config),
 		},
 		// todo; add metrics
 	}

@@ -1,0 +1,58 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+version: '3.8'
+
+services:
+  hertzbeat-collector-go:
+    build: .
+    container_name: hertzbeat-collector-go
+    restart: unless-stopped
+    environment:
+      # Collector identity (required)
+      - IDENTITY=hertzbeat-collector-go
+      # Manager server configuration
+      - MANAGER_HOST=host.docker.internal
+      - MANAGER_PORT=1158
+      - MANAGER_PROTOCOL=netty
+      # Collector mode
+      - MODE=public
+      # Optional: collector configuration
+      - COLLECTOR_NAME=hertzbeat-collector-go
+      - COLLECTOR_IP=0.0.0.0
+      - COLLECTOR_PORT=8080
+      - LOG_LEVEL=info
+    ports:
+      - "8080:8080"
+    networks:
+      - hertzbeat-network
+    healthcheck:
+      test: ["CMD", "pgrep", "hertzbeat-collector-go"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - ./hertzbeat-collector.yaml:/app/etc/hertzbeat-collector.yaml:ro
+      - ./logs:/app/logs
+
+networks:
+  hertzbeat-network:
+    driver: bridge
+
+volumes:
+  logs:

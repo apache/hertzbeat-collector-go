@@ -21,13 +21,15 @@ package job
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect/dispatch"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/dispatcher"
-	clrServer "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
+	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/collector"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
 )
@@ -42,24 +44,22 @@ type TimeDispatcher interface {
 
 // Config represents job service configuration
 type Config struct {
-	clrServer.Server
+	clrserver.Server
+	TimeDispatch TimeDispatcher
 }
 
 // Runner implements the service runner interface
 type Runner struct {
 	Config
-	timeDispatch TimeDispatcher
-	mu           sync.RWMutex
-	runningJobs  map[int64]*jobtypes.Job
-	ctx          context.Context
-	cancel       context.CancelFunc
+	mu          sync.RWMutex
+	runningJobs map[int64]*jobtypes.Job
 }
 
 // AddAsyncCollectJob adds a job to async collection scheduling
 func (r *Runner) AddAsyncCollectJob(job *jobtypes.Job) error {
 	if job == nil {
 		r.Logger.Error(nil, "job cannot be nil")
-		return fmt.Errorf("job cannot be nil")
+		return errors.New("job cannot be nil")
 	}
 
 	r.Logger.Info("adding async collect job",
@@ -75,7 +75,7 @@ func (r *Runner) AddAsyncCollectJob(job *jobtypes.Job) error {
 	r.runningJobs[job.ID] = job
 
 	// Add job to time dispatcher for scheduling
-	if err := r.timeDispatch.AddJob(job); err != nil {
+	if err := r.TimeDispatch.AddJob(job); err != nil {
 		delete(r.runningJobs, job.ID)
 		r.Logger.Error(err, "failed to add job to time dispatcher", "jobID", job.ID)
 		return fmt.Errorf("failed to add job to time dispatcher: %w", err)
@@ -96,7 +96,7 @@ func (r *Runner) RemoveAsyncCollectJob(jobID int64) error {
 	delete(r.runningJobs, jobID)
 
 	// Remove from time dispatcher
-	if err := r.timeDispatch.RemoveJob(jobID); err != nil {
+	if err := r.TimeDispatch.RemoveJob(jobID); err != nil {
 		r.Logger.Error(err, "failed to remove job from time dispatcher", "jobID", jobID)
 		return fmt.Errorf("failed to remove job from time dispatcher: %w", err)
 	}
@@ -119,8 +119,6 @@ func (r *Runner) RunningJobs() map[int64]*jobtypes.Job {
 
 // New creates a new job service runner with all components initialized
 func New(srv *Config) *Runner {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	// Create result handler
 	resultHandler := collect.NewResultHandler(srv.Logger)
 
@@ -133,12 +131,12 @@ func New(srv *Config) *Runner {
 	// Create time dispatcher
 	timeDispatch := dispatcher.NewTimeDispatch(srv.Logger, commonDispatcher)
 
+	// Update the config with the time dispatcher
+	srv.TimeDispatch = timeDispatch
+
 	runner := &Runner{
-		Config:       *srv,
-		timeDispatch: timeDispatch,
-		runningJobs:  make(map[int64]*jobtypes.Job),
-		ctx:          ctx,
-		cancel:       cancel,
+		Config:      *srv,
+		runningJobs: make(map[int64]*jobtypes.Job),
 	}
 
 	return runner
@@ -149,14 +147,18 @@ func (r *Runner) Start(ctx context.Context) error {
 	r.Logger = r.Logger.WithName(r.Info().Name).WithValues("runner", r.Info().Name)
 	r.Logger.Info("Starting job service runner")
 
+	// Initialize all collectors
+	r.Logger.Info("Initializing collectors...")
+	basic.InitializeAllCollectors(r.Logger)
+
 	// Start the time dispatcher
-	if r.timeDispatch != nil {
-		if err := r.timeDispatch.Start(ctx); err != nil {
+	if r.TimeDispatch != nil {
+		if err := r.TimeDispatch.Start(ctx); err != nil {
 			r.Logger.Error(err, "failed to start time dispatcher")
 			return fmt.Errorf("failed to start time dispatcher: %w", err)
 		}
 	} else {
-		return fmt.Errorf("time dispatcher is not initialized")
+		return errors.New("time dispatcher is not initialized")
 	}
 
 	r.Logger.Info("job service runner started successfully")
@@ -164,8 +166,8 @@ func (r *Runner) Start(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		r.Logger.Info("job service runner stopped by context")
-		if r.timeDispatch != nil {
-			if err := r.timeDispatch.Stop(); err != nil {
+		if r.TimeDispatch != nil {
+			if err := r.TimeDispatch.Stop(); err != nil {
 				r.Logger.Error(err, "error stopping time dispatcher")
 			}
 		}
@@ -184,11 +186,9 @@ func (r *Runner) Info() collector.Info {
 func (r *Runner) Close() error {
 	r.Logger.Info("closing job service runner")
 
-	r.cancel()
-
 	// Stop time dispatcher
-	if r.timeDispatch != nil {
-		if err := r.timeDispatch.Stop(); err != nil {
+	if r.TimeDispatch != nil {
+		if err := r.TimeDispatch.Stop(); err != nil {
 			r.Logger.Error(err, "error stopping time dispatcher")
 			// Continue cleanup despite error
 		}
@@ -199,8 +199,8 @@ func (r *Runner) Close() error {
 
 	// Clear running jobs
 	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.runningJobs = make(map[int64]*jobtypes.Job)
-	r.mu.Unlock()
 
 	r.Logger.Info("job service runner closed")
 	return nil

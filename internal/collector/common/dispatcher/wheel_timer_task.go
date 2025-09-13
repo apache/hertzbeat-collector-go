@@ -20,6 +20,7 @@
 package dispatcher
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -59,9 +60,13 @@ func (wtt *WheelTimerTask) Run(timeout *jobtypes.Timeout) error {
 
 	startTime := time.Now()
 
+	// Create a context for this specific task execution
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Dispatch metrics task through common dispatcher
 	// This is where the job gets broken down into individual metric collection tasks
-	err := wtt.commonDispatcher.DispatchMetricsTask(wtt.job, timeout)
+	err := wtt.commonDispatcher.DispatchMetricsTask(ctx, wtt.job, timeout)
 
 	duration := time.Since(startTime)
 

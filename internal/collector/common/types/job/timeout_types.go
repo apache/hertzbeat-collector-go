@@ -18,7 +18,6 @@
 package job
 
 import (
-	"context"
 	"time"
 )
 
@@ -32,20 +31,15 @@ type Timeout struct {
 	task        TimerTask
 	deadline    time.Time
 	cancelled   bool
-	ctx         context.Context
-	cancel      context.CancelFunc
 	wheelIndex  int
 	bucketIndex int
 }
 
 // NewTimeout creates a new timeout instance
 func NewTimeout(task TimerTask, delay time.Duration) *Timeout {
-	ctx, cancel := context.WithCancel(context.Background())
 	return &Timeout{
 		task:     task,
 		deadline: time.Now().Add(delay),
-		ctx:      ctx,
-		cancel:   cancel,
 	}
 }
 
@@ -70,13 +64,7 @@ func (t *Timeout) Cancel() bool {
 		return false
 	}
 	t.cancelled = true
-	t.cancel()
 	return true
-}
-
-// Context returns the context of this timeout
-func (t *Timeout) Context() context.Context {
-	return t.ctx
 }
 
 // SetWheelIndex sets the wheel index for this timeout
