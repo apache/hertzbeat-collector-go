@@ -46,13 +46,9 @@ type MessageProcessor interface {
 type HeartbeatProcessor struct{}
 
 func (p *HeartbeatProcessor) Process(msg *pb.Message) (*pb.Message, error) {
-	// Handle heartbeat message
-	return &pb.Message{
-		Type:      pb.MessageType_HEARTBEAT,
-		Direction: pb.Direction_RESPONSE,
-		Identity:  msg.Identity,
-		Msg:       []byte("heartbeat ack"),
-	}, nil
+	// Java version logs receipt of heartbeat response and returns null (no response needed)
+	// This matches: log.info("collector receive manager server response heartbeat, time: {}. ", System.currentTimeMillis());
+	return nil, nil
 }
 
 // GoOnlineProcessor handles go online messages
