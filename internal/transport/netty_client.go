@@ -154,7 +154,24 @@ func (c *NettyClient) SetEventHandler(handler EventHandler) {
 }
 
 func (c *NettyClient) triggerEvent(eventType EventType, err error) {
-	log.Printf("Triggering event: %d, error: %v", eventType, err)
+	eventName := ""
+	switch eventType {
+	case EventConnected:
+		eventName = "Connected"
+	case EventDisconnected:
+		eventName = "Disconnected"
+	case EventConnectFailed:
+		eventName = "ConnectFailed"
+	default:
+		eventName = fmt.Sprintf("Unknown(%d)", eventType)
+	}
+
+	if err != nil {
+		log.Printf("Triggering event: %s, error: %v", eventName, err)
+	} else {
+		log.Printf("Triggering event: %s", eventName)
+	}
+
 	if c.eventHandler != nil {
 		c.eventHandler(Event{
 			Type:    eventType,
