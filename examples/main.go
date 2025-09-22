@@ -51,11 +51,11 @@ func main() {
 
 	// Display configuration
 	log.Info("=== Configuration ===")
-	log.Info("Collector Identity", map[string]interface{}{"identity": cfg.Collector.Identity})
-	log.Info("Collector Mode", map[string]interface{}{"mode": cfg.Collector.Mode})
-	log.Info("Manager Host", map[string]interface{}{"host": cfg.Collector.Manager.Host})
-	log.Info("Manager Port", map[string]interface{}{"port": cfg.Collector.Manager.Port})
-	log.Info("Manager Protocol", map[string]interface{}{"protocol": cfg.Collector.Manager.Protocol})
+	log.Info("Collector Identity", "identity", cfg.Collector.Identity)
+	log.Info("Collector Mode", "mode", cfg.Collector.Mode)
+	log.Info("Manager Host", "host", cfg.Collector.Manager.Host)
+	log.Info("Manager Port", "port", cfg.Collector.Manager.Port)
+	log.Info("Manager Protocol", "protocol", cfg.Collector.Manager.Protocol)
 	log.Info("====================")
 
 	// Create transport runner from configuration
