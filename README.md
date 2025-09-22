@@ -30,7 +30,7 @@ HertzBeat-Collector-Go is the Go implementation of the collector for [Apache Her
 └── README.md           # Project description
 ```
 
-## � Configuration Architecture
+## Configuration Architecture
 
 ### Unified Configuration System
 
