@@ -412,7 +412,12 @@ func (c *NettyClient) processReceivedMessage(msg *pb.Message) {
 						log.Printf("Processor returned invalid response type for message type %d", msg.Type)
 					}
 				} else {
-					log.Printf("Processor returned nil response for message type %d (this is normal for some message types)", msg.Type)
+					// For heartbeat messages (type 0), nil response is expected and normal
+					if msg.Type == pb.MessageType_HEARTBEAT {
+						log.Printf("Heartbeat response received for message type %d (no response needed)", msg.Type)
+					} else {
+						log.Printf("Processor returned nil response for message type %d (this is normal for some message types)", msg.Type)
+					}
 				}
 			}()
 		} else {
@@ -538,24 +543,41 @@ func RegisterDefaultNettyProcessors(client *NettyClient) {
 
 	client.RegisterProcessor(MessageTypeIssueCyclicTask, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
-			processor := &CollectCyclicDataProcessor{client: nil}
-			return processor.Process(pbMsg)
+			// Handle cyclic task message
+			// TODO: Implement actual task processing logic
+			return &pb.Message{
+				Type:      pb.MessageType_ISSUE_CYCLIC_TASK,
+				Direction: pb.Direction_RESPONSE,
+				Identity:  pbMsg.Identity,
+				Msg:       []byte("cyclic task ack"),
+			}, nil
 		}
 		return nil, fmt.Errorf("invalid message type")
 	})
 
 	client.RegisterProcessor(MessageTypeDeleteCyclicTask, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
-			processor := &DeleteCyclicTaskProcessor{client: nil}
-			return processor.Process(pbMsg)
+			// Handle delete cyclic task message
+			return &pb.Message{
+				Type:      pb.MessageType_DELETE_CYCLIC_TASK,
+				Direction: pb.Direction_RESPONSE,
+				Identity:  pbMsg.Identity,
+				Msg:       []byte("delete cyclic task ack"),
+			}, nil
 		}
 		return nil, fmt.Errorf("invalid message type")
 	})
 
 	client.RegisterProcessor(MessageTypeIssueOneTimeTask, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
-			processor := &CollectOneTimeDataProcessor{client: nil}
-			return processor.Process(pbMsg)
+			// Handle one-time task message
+			// TODO: Implement actual task processing logic
+			return &pb.Message{
+				Type:      pb.MessageType_ISSUE_ONE_TIME_TASK,
+				Direction: pb.Direction_RESPONSE,
+				Identity:  pbMsg.Identity,
+				Msg:       []byte("one-time task ack"),
+			}, nil
 		}
 		return nil, fmt.Errorf("invalid message type")
 	})

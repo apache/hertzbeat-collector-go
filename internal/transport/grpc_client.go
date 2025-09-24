@@ -303,6 +303,39 @@ func (c *GrpcClient) processReceivedMessage(msg *pb.Message) {
 
 	// If not a sync response, distribute to registered processors
 	if fn, ok := c.registry.Get(int32(msg.Type)); ok {
-		go fn(msg)
+		// For request messages that require response, process synchronously and send response back
+		if msg.Direction == pb.Direction_REQUEST {
+			go func() {
+				response, err := fn(msg)
+				if err != nil {
+					log.Printf("Error processing message type %d: %v", msg.Type, err)
+					return
+				}
+
+				if response != nil {
+					// Check if response is actually a valid protobuf message
+					if pbResponse, ok := response.(*pb.Message); ok && pbResponse != nil {
+						// Send the response back to server
+						if err := c.SendMsg(pbResponse); err != nil {
+							log.Printf("Failed to send response for message type %d: %v", msg.Type, err)
+						} else {
+							log.Printf("Successfully sent response for message type %d", msg.Type)
+						}
+					} else {
+						log.Printf("Processor returned invalid response type for message type %d", msg.Type)
+					}
+				} else {
+					// For heartbeat messages (type 0), nil response is expected and normal
+					if msg.Type == pb.MessageType_HEARTBEAT {
+						log.Printf("Heartbeat response received for message type %d (no response needed)", msg.Type)
+					} else {
+						log.Printf("Processor returned nil response for message type %d (this is normal for some message types)", msg.Type)
+					}
+				}
+			}()
+		} else {
+			// For non-request messages, process asynchronously
+			go fn(msg)
+		}
 	}
 }
