@@ -570,14 +570,35 @@ func RegisterDefaultNettyProcessors(client *NettyClient) {
 
 	client.RegisterProcessor(MessageTypeIssueOneTimeTask, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
-			// Handle one-time task message
-			// TODO: Implement actual task processing logic
-			return &pb.Message{
-				Type:      pb.MessageType_ISSUE_ONE_TIME_TASK,
-				Direction: pb.Direction_RESPONSE,
-				Identity:  pbMsg.Identity,
-				Msg:       []byte("one-time task ack"),
-			}, nil
+			// Use fmt.Printf to ensure the log is visible
+			fmt.Printf("=== ONE-TIME TASK RECEIVED ===\n")
+			fmt.Printf("Message Type: %d (ISSUE_ONE_TIME_TASK)\n", pbMsg.Type)
+			fmt.Printf("Message Content: %s\n", string(pbMsg.Msg))
+			fmt.Printf("Message Identity: %s\n", pbMsg.Identity)
+			fmt.Printf("==============================\n")
+
+			// TODO: Parse Job from pbMsg.Msg and execute the task
+			// For now, just log the message content and return nil (no immediate response)
+			// The actual response should be sent as RESPONSE_ONE_TIME_TASK_DATA (type 7)
+			// after the task is completed
+
+			// Simulate task processing
+			go func() {
+				fmt.Printf("=== PROCESSING ONE-TIME TASK ===\n")
+				// TODO: Implement actual task execution here
+				// This should:
+				// 1. Parse the Job from pbMsg.Msg
+				// 2. Execute the collection task
+				// 3. Send RESPONSE_ONE_TIME_TASK_DATA message with results
+
+				// For now, just log that we would process the task
+				fmt.Printf("One-time task processing completed (simulated)\n")
+				fmt.Printf("==========================================\n")
+			}()
+
+			// Return nil - no immediate response needed
+			// The actual response will be sent asynchronously
+			return nil, nil
 		}
 		return nil, fmt.Errorf("invalid message type")
 	})

@@ -176,13 +176,29 @@ func NewCollectOneTimeDataProcessor(client *GrpcClient) *CollectOneTimeDataProce
 
 func (p *CollectOneTimeDataProcessor) Process(msg *pb.Message) (*pb.Message, error) {
 	// Handle one-time task message
-	// TODO: Implement actual task processing logic
-	return &pb.Message{
-		Type:      pb.MessageType_ISSUE_ONE_TIME_TASK,
-		Direction: pb.Direction_RESPONSE,
-		Identity:  msg.Identity,
-		Msg:       []byte("one-time task ack"),
-	}, nil
+	log.Printf("Received one-time task message: %s", string(msg.Msg))
+
+	// TODO: Parse Job from msg.Msg and execute the task
+	// For now, just log the message content and return nil (no immediate response)
+	// The actual response should be sent as RESPONSE_ONE_TIME_TASK_DATA (type 7)
+	// after the task is completed
+
+	// Simulate task processing
+	go func() {
+		log.Printf("Processing one-time task...")
+		// TODO: Implement actual task execution here
+		// This should:
+		// 1. Parse the Job from msg.Msg
+		// 2. Execute the collection task
+		// 3. Send RESPONSE_ONE_TIME_TASK_DATA message with results
+
+		// For now, just log that we would process the task
+		log.Printf("One-time task processing completed (simulated)")
+	}()
+
+	// Return nil - no immediate response needed
+	// The actual response will be sent asynchronously
+	return nil, nil
 }
 
 // RegisterDefaultProcessors registers all default message processors
