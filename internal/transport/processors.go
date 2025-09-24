@@ -205,8 +205,11 @@ func (p *CollectOneTimeDataProcessor) Process(msg *pb.Message) (*pb.Message, err
 func RegisterDefaultProcessors(client *GrpcClient) {
 	client.RegisterProcessor(MessageTypeHeartbeat, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
+			// Heartbeat processor returns nil, nil (no response needed)
+			// This is expected behavior for heartbeat messages
 			processor := &HeartbeatProcessor{}
-			return processor.Process(pbMsg)
+			_, err := processor.Process(pbMsg)
+			return nil, err // Return nil response explicitly
 		}
 		return nil, fmt.Errorf("invalid message type")
 	})
