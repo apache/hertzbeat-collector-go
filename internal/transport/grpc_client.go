@@ -260,7 +260,17 @@ func (c *GrpcClient) heartbeatLoop() {
 			Direction: pb.Direction_REQUEST,
 			Identity:  "collector-go", // 可根据实际配置
 		}
-		_, _ = c.SendMsgSync(heartbeat, 2000)
+
+		// Use a separate goroutine to send heartbeat to avoid blocking the loop
+		go func() {
+			_, err := c.SendMsgSync(heartbeat, 2000)
+			if err != nil {
+				log.Printf("Failed to send heartbeat: %v", err)
+			} else {
+				log.Printf("Heartbeat sent successfully, time: %d", time.Now().UnixMilli())
+			}
+		}()
+
 		time.Sleep(10 * time.Second)
 	}
 }
