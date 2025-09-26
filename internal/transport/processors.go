@@ -19,6 +19,8 @@ package transport
 
 import (
 	"fmt"
+	"log"
+	"time"
 
 	pb "hertzbeat.apache.org/hertzbeat-collector-go/api"
 )
@@ -46,13 +48,9 @@ type MessageProcessor interface {
 type HeartbeatProcessor struct{}
 
 func (p *HeartbeatProcessor) Process(msg *pb.Message) (*pb.Message, error) {
-	// Handle heartbeat message
-	return &pb.Message{
-		Type:      pb.MessageType_HEARTBEAT,
-		Direction: pb.Direction_RESPONSE,
-		Identity:  msg.Identity,
-		Msg:       []byte("heartbeat ack"),
-	}, nil
+	// Java version logs receipt of heartbeat response and returns null (no response needed)
+	// This matches: log.info("collector receive manager server response heartbeat, time: {}. ", System.currentTimeMillis());
+	return nil, nil
 }
 
 // GoOnlineProcessor handles go online messages
@@ -84,17 +82,25 @@ func NewGoOfflineProcessor(client *NettyClient) *GoOfflineProcessor {
 }
 
 func (p *GoOfflineProcessor) Process(msg *pb.Message) (*pb.Message, error) {
-	// Handle go offline message - shutdown the client
-	if p.client != nil {
-		// Stop heartbeat and close connection
-		p.client.Shutdown()
-	}
-	return &pb.Message{
+	// Handle go offline message - first return response, then shutdown
+	// Create response first
+	response := &pb.Message{
 		Type:      pb.MessageType_GO_OFFLINE,
 		Direction: pb.Direction_RESPONSE,
 		Identity:  msg.Identity,
 		Msg:       []byte("offline ack"),
-	}, nil
+	}
+
+	// Schedule shutdown after a brief delay to allow response to be sent
+	if p.client != nil {
+		go func() {
+			time.Sleep(100 * time.Millisecond) // Brief delay to ensure response is sent
+			log.Printf("Shutting down client as requested by manager")
+			p.client.Shutdown()
+		}()
+	}
+
+	return response, nil
 }
 
 // GoCloseProcessor handles go close messages
