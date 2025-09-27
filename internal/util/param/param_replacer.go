@@ -385,12 +385,6 @@ func (r *Replacer) decryptPassword(encryptedPassword string) (string, error) {
 		return result, nil
 	}
 
-	// Last resort: known password mapping for testing
-	if encryptedPassword == "uecgmMb8ZA0/H1HF/hD2gA==" {
-		log.Info("using known password mapping for testing", "input", encryptedPassword)
-		return "231013", nil
-	}
-
 	// If all decryption attempts fail, return original value to allow system to continue
 	log.Info("all decryption attempts failed, using original value")
 	return encryptedPassword, nil

@@ -122,14 +122,12 @@ func (td *TimeDispatch) AddJob(job *jobtypes.Job) error {
 	// Calculate delay
 	var delay time.Duration
 	if job.DefaultInterval > 0 {
-		// Manager sends interval in seconds, use it directly
-		delay = time.Duration(job.DefaultInterval) * time.Second
-		// Delay calculation - debug level only
+		delay = time.Duration(job.DefaultInterval) * time.Millisecond
 		td.logger.V(1).Info("calculated delay",
 			"interval", job.DefaultInterval,
 			"delay", delay)
 	} else {
-		delay = 30 * time.Second // default interval
+		delay = 10 * time.Second
 	}
 
 	// Create timeout
