@@ -30,6 +30,7 @@ import (
 	_ "github.com/microsoft/go-mssqldb"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
 )
 
 const (
@@ -67,6 +68,13 @@ func NewJDBCCollector(logger logger.Logger) *JDBCCollector {
 	}
 }
 
+// extractJDBCConfig extracts JDBC configuration from interface{} type
+// This function uses the parameter replacer for consistent configuration extraction
+func extractJDBCConfig(jdbcInterface interface{}) (*jobtypes.JDBCProtocol, error) {
+	replacer := param.NewReplacer()
+	return replacer.ExtractJDBCConfig(jdbcInterface)
+}
+
 // PreCheck validates the JDBC metrics configuration
 func (jc *JDBCCollector) PreCheck(metrics *jobtypes.Metrics) error {
 	if metrics == nil {
@@ -77,44 +85,51 @@ func (jc *JDBCCollector) PreCheck(metrics *jobtypes.Metrics) error {
 		return fmt.Errorf("JDBC protocol configuration is required")
 	}
 
-	jdbc := metrics.JDBC
+	// Extract JDBC configuration
+	jdbcConfig, err := extractJDBCConfig(metrics.JDBC)
+	if err != nil {
+		return fmt.Errorf("invalid JDBC configuration: %w", err)
+	}
+	if jdbcConfig == nil {
+		return fmt.Errorf("JDBC configuration is required")
+	}
 
 	// Validate required fields when URL is not provided
-	if jdbc.URL == "" {
-		if jdbc.Host == "" {
+	if jdbcConfig.URL == "" {
+		if jdbcConfig.Host == "" {
 			return fmt.Errorf("host is required when URL is not provided")
 		}
-		if jdbc.Port == "" {
+		if jdbcConfig.Port == "" {
 			return fmt.Errorf("port is required when URL is not provided")
 		}
-		if jdbc.Platform == "" {
+		if jdbcConfig.Platform == "" {
 			return fmt.Errorf("platform is required when URL is not provided")
 		}
 	}
 
 	// Validate platform
-	if jdbc.Platform != "" {
-		switch jdbc.Platform {
+	if jdbcConfig.Platform != "" {
+		switch jdbcConfig.Platform {
 		case PlatformMySQL, PlatformMariaDB, PlatformPostgreSQL, PlatformSQLServer, PlatformOracle:
 			// Valid platforms
 		default:
-			return fmt.Errorf("unsupported database platform: %s", jdbc.Platform)
+			return fmt.Errorf("unsupported database platform: %s", jdbcConfig.Platform)
 		}
 	}
 
 	// Validate query type
-	if jdbc.QueryType != "" {
-		switch jdbc.QueryType {
+	if jdbcConfig.QueryType != "" {
+		switch jdbcConfig.QueryType {
 		case QueryTypeOneRow, QueryTypeMultiRow, QueryTypeColumns, QueryTypeRunScript:
 			// Valid query types
 		default:
-			return fmt.Errorf("unsupported query type: %s", jdbc.QueryType)
+			return fmt.Errorf("unsupported query type: %s", jdbcConfig.QueryType)
 		}
 	}
 
 	// Validate SQL for most query types
-	if jdbc.QueryType != QueryTypeRunScript && jdbc.SQL == "" {
-		return fmt.Errorf("SQL is required for query type: %s", jdbc.QueryType)
+	if jdbcConfig.QueryType != QueryTypeRunScript && jdbcConfig.SQL == "" {
+		return fmt.Errorf("SQL is required for query type: %s", jdbcConfig.QueryType)
 	}
 
 	return nil
@@ -123,27 +138,35 @@ func (jc *JDBCCollector) PreCheck(metrics *jobtypes.Metrics) error {
 // Collect performs JDBC metrics collection
 func (jc *JDBCCollector) Collect(metrics *jobtypes.Metrics) *jobtypes.CollectRepMetricsData {
 	startTime := time.Now()
-	jdbc := metrics.JDBC
 
-	jc.logger.Info("starting JDBC collection",
-		"host", jdbc.Host,
-		"port", jdbc.Port,
-		"platform", jdbc.Platform,
-		"database", jdbc.Database,
-		"queryType", jdbc.QueryType)
+	// Extract JDBC configuration
+	jdbcConfig, err := extractJDBCConfig(metrics.JDBC)
+	if err != nil {
+		jc.logger.Error(err, "failed to extract JDBC config")
+		return jc.createFailResponse(metrics, CodeFail, fmt.Sprintf("JDBC config error: %v", err))
+	}
+	if jdbcConfig == nil {
+		return jc.createFailResponse(metrics, CodeFail, "JDBC configuration is required")
+	}
+
+	// Debug level only for collection start
+	jc.logger.V(1).Info("starting JDBC collection",
+		"host", jdbcConfig.Host,
+		"platform", jdbcConfig.Platform,
+		"queryType", jdbcConfig.QueryType)
 
 	// Get timeout
-	timeout := jc.getTimeout(jdbc.Timeout)
+	timeout := jc.getTimeout(jdbcConfig.Timeout)
 
 	// Get database URL
-	databaseURL, err := jc.constructDatabaseURL(jdbc)
+	databaseURL, err := jc.constructDatabaseURL(jdbcConfig)
 	if err != nil {
 		jc.logger.Error(err, "failed to construct database URL")
 		return jc.createFailResponse(metrics, CodeFail, fmt.Sprintf("Database URL error: %v", err))
 	}
 
 	// Create database connection
-	db, err := jc.getConnection(databaseURL, jdbc.Username, jdbc.Password, timeout)
+	db, err := jc.getConnection(databaseURL, jdbcConfig.Username, jdbcConfig.Password, timeout)
 	if err != nil {
 		jc.logger.Error(err, "failed to connect to database")
 		return jc.createFailResponse(metrics, CodeUnConnectable, fmt.Sprintf("Connection error: %v", err))
@@ -153,26 +176,27 @@ func (jc *JDBCCollector) Collect(metrics *jobtypes.Metrics) *jobtypes.CollectRep
 	// Execute query based on type with context
 	response := jc.createSuccessResponse(metrics)
 
-	switch jdbc.QueryType {
+	switch jdbcConfig.QueryType {
 	case QueryTypeOneRow:
-		err = jc.queryOneRow(db, jdbc.SQL, metrics.Aliasfields, response)
+		err = jc.queryOneRow(db, jdbcConfig.SQL, metrics.Aliasfields, response)
 	case QueryTypeMultiRow:
-		err = jc.queryMultiRow(db, jdbc.SQL, metrics.Aliasfields, response)
+		err = jc.queryMultiRow(db, jdbcConfig.SQL, metrics.Aliasfields, response)
 	case QueryTypeColumns:
-		err = jc.queryColumns(db, jdbc.SQL, metrics.Aliasfields, response)
+		err = jc.queryColumns(db, jdbcConfig.SQL, metrics.Aliasfields, response)
 	case QueryTypeRunScript:
-		err = jc.runScript(db, jdbc.SQL, response)
+		err = jc.runScript(db, jdbcConfig.SQL, response)
 	default:
-		err = fmt.Errorf("unsupported query type: %s", jdbc.QueryType)
+		err = fmt.Errorf("unsupported query type: %s", jdbcConfig.QueryType)
 	}
 
 	if err != nil {
-		jc.logger.Error(err, "query execution failed", "queryType", jdbc.QueryType)
+		jc.logger.Error(err, "query execution failed", "queryType", jdbcConfig.QueryType)
 		return jc.createFailResponse(metrics, CodeFail, fmt.Sprintf("Query error: %v", err))
 	}
 
 	duration := time.Since(startTime)
-	jc.logger.Info("JDBC collection completed",
+	// Debug level only for successful completion
+	jc.logger.V(1).Info("JDBC collection completed",
 		"duration", duration,
 		"rowCount", len(response.Values))
 
@@ -195,9 +219,8 @@ func (jc *JDBCCollector) getTimeout(timeoutStr string) time.Duration {
 		return duration
 	}
 
-	// If it's a pure number, treat it as seconds (more reasonable for database connections)
 	if timeout, err := strconv.Atoi(timeoutStr); err == nil {
-		return time.Duration(timeout) * time.Second
+		return time.Duration(timeout) * time.Millisecond
 	}
 
 	return 30 * time.Second // fallback to default
@@ -205,10 +228,6 @@ func (jc *JDBCCollector) getTimeout(timeoutStr string) time.Duration {
 
 // constructDatabaseURL constructs the database connection URL
 func (jc *JDBCCollector) constructDatabaseURL(jdbc *jobtypes.JDBCProtocol) (string, error) {
-	// If URL is provided directly, use it
-	if jdbc.URL != "" {
-		return jdbc.URL, nil
-	}
 
 	// Construct URL based on platform
 	host := jdbc.Host
@@ -217,7 +236,8 @@ func (jc *JDBCCollector) constructDatabaseURL(jdbc *jobtypes.JDBCProtocol) (stri
 
 	switch jdbc.Platform {
 	case PlatformMySQL, PlatformMariaDB:
-		return fmt.Sprintf("mysql://%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4",
+		// MySQL DSN format: [username[:password]@][protocol[(address)]]/dbname[?param1=value1&...&paramN=valueN]
+		return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4",
 			jdbc.Username, jdbc.Password, host, port, database), nil
 	case PlatformPostgreSQL:
 		return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
@@ -234,14 +254,13 @@ func (jc *JDBCCollector) constructDatabaseURL(jdbc *jobtypes.JDBCProtocol) (stri
 func (jc *JDBCCollector) getConnection(databaseURL, username, password string, timeout time.Duration) (*sql.DB, error) {
 	// Extract driver name from URL
 	var driverName string
-	if strings.HasPrefix(databaseURL, "mysql://") {
-		driverName = "mysql"
-		// Remove mysql:// prefix for the driver
-		databaseURL = strings.TrimPrefix(databaseURL, "mysql://")
-	} else if strings.HasPrefix(databaseURL, "postgres://") {
+	if strings.HasPrefix(databaseURL, "postgres://") {
 		driverName = "postgres"
 	} else if strings.HasPrefix(databaseURL, "sqlserver://") {
 		driverName = "sqlserver"
+	} else if strings.Contains(databaseURL, "@tcp(") {
+		// MySQL DSN format (no protocol prefix)
+		driverName = "mysql"
 	} else {
 		return nil, fmt.Errorf("unsupported database URL format: %s", databaseURL)
 	}

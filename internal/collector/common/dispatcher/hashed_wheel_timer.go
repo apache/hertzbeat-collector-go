@@ -100,7 +100,8 @@ func (hwt *hashedWheelTimer) NewTimeout(task jobtypes.TimerTask, delay time.Dura
 	bucket.timeouts = append(bucket.timeouts, timeout)
 	bucket.mu.Unlock()
 
-	hwt.logger.Info("created timeout",
+	// Log timeout creation only for debugging
+	hwt.logger.V(1).Info("created timeout",
 		"delay", delay,
 		"bucketIndex", bucketIndex,
 		"targetTick", targetTick)
@@ -114,9 +115,7 @@ func (hwt *hashedWheelTimer) Start(ctx context.Context) error {
 		return nil // already started
 	}
 
-	hwt.logger.Info("starting hashed wheel timer",
-		"wheelSize", hwt.wheelSize,
-		"tickDuration", hwt.tickDuration)
+	hwt.logger.Info("starting hashed wheel timer")
 
 	hwt.startTime = time.Now()
 	hwt.ticker = time.NewTicker(hwt.tickDuration)
@@ -137,8 +136,6 @@ func (hwt *hashedWheelTimer) Stop() error {
 	if !atomic.CompareAndSwapInt32(&hwt.stopped, 0, 1) {
 		return nil // already stopped
 	}
-
-	hwt.logger.Info("stopping hashed wheel timer")
 
 	hwt.cancel()
 
@@ -174,6 +171,14 @@ func (hwt *hashedWheelTimer) tick() {
 	bucket := hwt.wheel[bucketIndex]
 	bucket.mu.Lock()
 
+	// Only log tick processing if there are timeouts to process
+	if len(bucket.timeouts) > 0 {
+		hwt.logger.V(1).Info("processing tick",
+			"currentTick", currentTick,
+			"bucketIndex", bucketIndex,
+			"timeoutsCount", len(bucket.timeouts))
+	}
+
 	// Process expired timeouts
 	var remaining []*jobtypes.Timeout
 	for _, timeout := range bucket.timeouts {
@@ -181,8 +186,18 @@ func (hwt *hashedWheelTimer) tick() {
 			continue // skip cancelled timeouts
 		}
 
-		// Check if timeout has expired
-		if time.Now().After(timeout.Deadline()) {
+		now := time.Now()
+		deadline := timeout.Deadline()
+
+		// Check if timeout should execute based on wheel position
+		// A timeout should execute when currentTick >= its targetTick
+		wheelIndex := timeout.WheelIndex()
+		if currentTick >= int64(wheelIndex) {
+			// Only log actual task execution at INFO level
+			hwt.logger.Info("executing scheduled task",
+				"currentTick", currentTick,
+				"targetTick", wheelIndex)
+
 			// Execute the timeout task asynchronously
 			go func(t *jobtypes.Timeout) {
 				defer func() {
@@ -196,7 +211,12 @@ func (hwt *hashedWheelTimer) tick() {
 				}
 			}(timeout)
 		} else {
-			// Not yet expired, keep in bucket
+			// Not yet time to execute, keep in bucket
+			hwt.logger.V(1).Info("timeout not ready by wheel position",
+				"currentTick", currentTick,
+				"targetTick", wheelIndex,
+				"deadline", deadline,
+				"now", now)
 			remaining = append(remaining, timeout)
 		}
 	}
@@ -216,10 +236,11 @@ func (hwt *hashedWheelTimer) GetStats() map[string]interface{} {
 
 	return map[string]interface{}{
 		"wheelSize":     hwt.wheelSize,
-		"tickDuration":  hwt.tickDuration,
+		"tickDuration":  hwt.tickDuration.String(),
 		"currentTick":   atomic.LoadInt64(&hwt.currentTick),
 		"totalTimeouts": totalTimeouts,
 		"started":       atomic.LoadInt32(&hwt.started) == 1,
 		"stopped":       atomic.LoadInt32(&hwt.stopped) == 1,
+		"wheelPeriod":   (time.Duration(hwt.wheelSize) * hwt.tickDuration).String(),
 	}
 }

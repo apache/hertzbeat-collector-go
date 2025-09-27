@@ -28,6 +28,7 @@ import (
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
 )
 
 // CommonDispatcherImpl is responsible for breaking down jobs into individual metrics collection tasks
@@ -59,9 +60,9 @@ func (cd *CommonDispatcherImpl) DispatchMetricsTask(ctx context.Context, job *jo
 		return fmt.Errorf("job cannot be nil")
 	}
 
-	cd.logger.Info("dispatching metrics task",
+	// Dispatching metrics task - only log at debug level
+	cd.logger.V(1).Info("dispatching metrics task",
 		"jobID", job.ID,
-		"monitorID", job.MonitorID,
 		"app", job.App,
 		"metricsCount", len(job.Metrics))
 
@@ -74,6 +75,16 @@ func (cd *CommonDispatcherImpl) DispatchMetricsTask(ctx context.Context, job *jo
 		return nil
 	}
 
+	// Replace parameters in job configuration ONCE before concurrent collection
+	// This avoids concurrent map access issues in MetricsCollector
+	paramReplacer := param.NewReplacer()
+	processedJob, err := paramReplacer.ReplaceJobParams(job)
+	if err != nil {
+		cd.logger.Error(err, "failed to replace job parameters",
+			"jobID", job.ID)
+		return fmt.Errorf("parameter replacement failed: %w", err)
+	}
+
 	// Create collection context with timeout
 	collectCtx, collectCancel := context.WithTimeout(ctx, cd.getCollectionTimeout(job))
 	defer collectCancel()
@@ -82,13 +93,26 @@ func (cd *CommonDispatcherImpl) DispatchMetricsTask(ctx context.Context, job *jo
 	resultChannels := make([]chan *jobtypes.CollectRepMetricsData, len(metricsToCollect))
 
 	for i, metrics := range metricsToCollect {
-		cd.logger.Info("starting metrics collection",
-			"jobID", job.ID,
+		// Starting metrics collection - debug level only
+		cd.logger.V(1).Info("starting metrics collection",
 			"metricsName", metrics.Name,
 			"protocol", metrics.Protocol)
 
-		// Start metrics collection in goroutine
-		resultChannels[i] = cd.metricsCollector.CollectMetrics(metrics, job, timeout)
+		// Find the processed metrics in the processed job
+		var processedMetrics *jobtypes.Metrics
+		for j := range processedJob.Metrics {
+			if processedJob.Metrics[j].Name == metrics.Name {
+				processedMetrics = &processedJob.Metrics[j]
+				break
+			}
+		}
+		if processedMetrics == nil {
+			cd.logger.Error(nil, "processed metrics not found", "metricsName", metrics.Name)
+			continue
+		}
+
+		// Start metrics collection in goroutine with processed data
+		resultChannels[i] = cd.metricsCollector.CollectMetrics(processedMetrics, processedJob, timeout)
 	}
 
 	// Collect results from all metrics collection tasks
@@ -100,8 +124,8 @@ func (cd *CommonDispatcherImpl) DispatchMetricsTask(ctx context.Context, job *jo
 		case result := <-resultChan:
 			if result != nil {
 				results = append(results, result)
-				cd.logger.Info("received metrics result",
-					"jobID", job.ID,
+				// Metrics result received - debug level only
+				cd.logger.V(1).Info("received metrics result",
 					"metricsName", metricsToCollect[i].Name,
 					"code", result.Code)
 			}
@@ -123,18 +147,26 @@ func (cd *CommonDispatcherImpl) DispatchMetricsTask(ctx context.Context, job *jo
 		return err
 	}
 
-	cd.logger.Info("successfully dispatched metrics task",
-		"jobID", job.ID,
-		"resultsCount", len(results),
-		"errorsCount", len(errors),
-		"duration", duration)
+	// Only log summary for successful tasks if there were errors
+	if len(errors) > 0 {
+		cd.logger.Info("metrics task completed with errors",
+			"jobID", job.ID,
+			"errorsCount", len(errors),
+			"duration", duration)
+	} else {
+		cd.logger.V(1).Info("metrics task completed successfully",
+			"jobID", job.ID,
+			"resultsCount", len(results),
+			"duration", duration)
+	}
 
 	return nil
 }
 
 // handleResults processes the collection results and decides on next actions
 func (cd *CommonDispatcherImpl) handleResults(results []*jobtypes.CollectRepMetricsData, job *jobtypes.Job, errors []error) error {
-	cd.logger.Info("handling collection results",
+	// Debug level only for result handling
+	cd.logger.V(1).Info("handling collection results",
 		"jobID", job.ID,
 		"resultsCount", len(results),
 		"errorsCount", len(errors))
@@ -163,7 +195,8 @@ func (cd *CommonDispatcherImpl) handleResults(results []*jobtypes.CollectRepMetr
 
 // evaluateNextActions decides what to do next based on collection results
 func (cd *CommonDispatcherImpl) evaluateNextActions(job *jobtypes.Job, results []*jobtypes.CollectRepMetricsData, errors []error) {
-	cd.logger.Info("evaluating next actions",
+	// Debug level only for next actions evaluation
+	cd.logger.V(1).Info("evaluating next actions",
 		"jobID", job.ID,
 		"resultsCount", len(results),
 		"errorsCount", len(errors))
@@ -172,13 +205,13 @@ func (cd *CommonDispatcherImpl) evaluateNextActions(job *jobtypes.Job, results [
 	hasNextLevel := cd.hasNextLevelMetrics(job, results)
 
 	if hasNextLevel {
-		cd.logger.Info("job has next level metrics to collect", "jobID", job.ID)
+		cd.logger.V(1).Info("job has next level metrics to collect", "jobID", job.ID)
 		// TODO: Schedule next level metrics collection
 	}
 
 	// For cyclic jobs, the rescheduling is handled by WheelTimerTask
 	if job.IsCyclic {
-		cd.logger.Info("cyclic job will be rescheduled by timer", "jobID", job.ID)
+		cd.logger.V(1).Info("cyclic job will be rescheduled by timer", "jobID", job.ID)
 	}
 
 	// TODO: Send results to data queue for further processing

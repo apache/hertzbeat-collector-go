@@ -108,17 +108,20 @@ func server(ctx context.Context, logOut io.Writer) error {
 }
 
 func startRunners(ctx context.Context, cfg *clrserver.Server) error {
+	// Create job server first
+	jobRunner := jobserver.New(&jobserver.Config{
+		Server: *cfg,
+	})
+
+	// Create transport server and connect it to job server
+	transportRunner := transportserver.NewFromConfig(cfg.Config)
+	transportRunner.SetJobScheduler(jobRunner) // Connect transport to job scheduler
+
 	runners := []struct {
 		runner Runner[collectortypes.Info]
 	}{
-		{
-			jobserver.New(&jobserver.Config{
-				Server: *cfg,
-			}),
-		},
-		{
-			transportserver.NewFromConfig(cfg.Config),
-		},
+		{jobRunner},
+		{transportRunner},
 		// todo; add metrics
 	}
 
