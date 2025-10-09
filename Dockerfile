@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-FROM golang:1.23-alpine AS golang-builder
+FROM golang:1.25-alpine3.22 AS golang-builder
 
 ARG GOPROXY
 # ENV GOPROXY ${GOPROXY:-direct}
@@ -28,7 +28,7 @@ ENV BUILD_DIR /app
 
 COPY . ${BUILD_DIR}
 WORKDIR ${BUILD_DIR}
-RUN apk --no-cache add build-base git bash
+RUN apk --no-cache add build-base git bash golangci-lint
 
 RUN make init && \
     make fmt && \
