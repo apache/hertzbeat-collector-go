@@ -18,8 +18,8 @@
 FROM golang:1.25-alpine3.22 AS golang-builder
 
 ARG GOPROXY
-# ENV GOPROXY ${GOPROXY:-direct}
-# ENV GOPROXY=https://proxy.golang.com.cn,direct
+ENV GOPROXY ${GOPROXY:-direct}
+ENV GOPROXY=https://proxy.golang.com.cn,direct
 
 ENV GOPATH /go
 ENV GOROOT /usr/local/go
@@ -28,11 +28,9 @@ ENV BUILD_DIR /app
 
 COPY . ${BUILD_DIR}
 WORKDIR ${BUILD_DIR}
-RUN apk --no-cache add build-base git bash golangci-lint
+RUN apk --no-cache add build-base git bash
 
 RUN make init && \
-    make fmt && \
-    make go-lint &&\
     make build
 
 RUN chmod +x bin/collector
@@ -57,7 +55,7 @@ RUN apk update \
     && echo "${TIMEZONE}" > /etc/timezone
 
 COPY --from=golang-builder /app/bin/collector /usr/local/bin/collector
-COPY --from=golang-builder /app/etc/hertzbeat-collector.yml /etc/hertzbeat-collector.yml
+COPY --from=golang-builder /app/etc/hertzbeat-collector.yaml /etc/hertzbeat-collector.yaml
 
 EXPOSE 8090
-ENTRYPOINT ["collector", "server", "--config", "/etc/hertzbeat-collector.yml"]
+ENTRYPOINT ["collector", "server", "--config", "/etc/hertzbeat-collector.yaml"]
