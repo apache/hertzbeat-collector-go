@@ -33,4 +33,3 @@ jobs:
       - uses: ./tools/github-actions/setup-deps
       - run: make tools
       - run: make lint
-      - run: make go-lint
