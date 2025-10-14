@@ -68,6 +68,7 @@ func (cd *CommonDispatcherImpl) DispatchMetricsTask(ctx context.Context, job *jo
 
 	startTime := time.Now()
 
+	job.ConstructPriorMetrics()
 	// Get the next metrics to collect based on job priority and dependencies
 	metricsToCollect := job.NextCollectMetrics()
 	if len(metricsToCollect) == 0 {

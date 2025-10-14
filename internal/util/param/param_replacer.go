@@ -188,6 +188,12 @@ func (r *Replacer) replaceMetricsParams(metrics *jobtypes.Metrics, paramMap map[
 	// For now, other protocols (HTTP, SSH, etc.) are concrete struct pointers and
 	// don't require parameter replacement
 
+	if metrics.SSH != nil {
+		if err := r.replaceProtocolParams(&metrics.SSH, paramMap); err != nil {
+			return fmt.Errorf("failed to replace SSH params: %w", err)
+		}
+	}
+
 	// Replace parameters in basic metrics fields
 	if err := r.replaceBasicMetricsParams(metrics, paramMap); err != nil {
 		return fmt.Errorf("failed to replace basic metrics params: %w", err)

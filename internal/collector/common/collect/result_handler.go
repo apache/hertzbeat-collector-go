@@ -21,9 +21,9 @@ package collect
 
 import (
 	"fmt"
-	"net/http"
 
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
@@ -69,7 +69,7 @@ func (rh *ResultHandlerImpl) HandleCollectData(data *jobtypes.CollectRepMetricsD
 		}
 
 		// Log successful result sending
-		if data.Code == http.StatusOK {
+		if data.Code == constants.CollectSuccess {
 			rh.logger.V(1).Info("successfully sent collection result to Manager",
 				"metricsName", data.Metrics)
 		} else {

@@ -21,7 +21,6 @@ package dispatch
 
 import (
 	"fmt"
-	"net/http"
 	"time"
 
 	// Import basic package with blank identifier to trigger its init() function
@@ -29,6 +28,7 @@ import (
 	_ "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect/strategy"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
@@ -67,7 +67,7 @@ func (mc *MetricsCollector) CollectMetrics(metrics *jobtypes.Metrics, job *jobty
 				"protocol", metrics.Protocol,
 				"metricsName", metrics.Name)
 
-			result := mc.createErrorResponse(metrics, job, http.StatusInternalServerError, fmt.Sprintf("Collector not found: %v", err))
+			result := mc.createErrorResponse(metrics, job, constants.CollectUnavailable, fmt.Sprintf("Collector not found: %v", err))
 			resultChan <- result
 			return
 		}
@@ -102,7 +102,7 @@ func (mc *MetricsCollector) CollectMetrics(metrics *jobtypes.Metrics, job *jobty
 		duration := time.Since(startTime)
 
 		// Only log failures at INFO level, success at debug level
-		if result != nil && result.Code == http.StatusOK {
+		if result != nil && result.Code == constants.CollectSuccess {
 			mc.logger.V(1).Info("metrics collection completed successfully",
 				"metricsName", metrics.Name,
 				"protocol", metrics.Protocol,
