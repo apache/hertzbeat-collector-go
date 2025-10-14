@@ -53,8 +53,8 @@ func (mc *MetricsCollector) CollectMetrics(metrics *jobtypes.Metrics, job *jobty
 	go func() {
 		defer close(resultChan)
 
-		mc.logger.Info("starting metrics collection",
-			"jobID", job.ID,
+		// Debug level only for collection start
+		mc.logger.V(1).Info("starting metrics collection",
 			"metricsName", metrics.Name,
 			"protocol", metrics.Protocol)
 
@@ -72,7 +72,7 @@ func (mc *MetricsCollector) CollectMetrics(metrics *jobtypes.Metrics, job *jobty
 			return
 		}
 
-		// Perform the actual collection
+		// Perform the actual collection with metrics (parameters should already be replaced by CommonDispatcher)
 		result := collector.Collect(metrics)
 
 		// Enrich result with job information
@@ -101,9 +101,9 @@ func (mc *MetricsCollector) CollectMetrics(metrics *jobtypes.Metrics, job *jobty
 
 		duration := time.Since(startTime)
 
+		// Only log failures at INFO level, success at debug level
 		if result != nil && result.Code == http.StatusOK {
-			mc.logger.Info("metrics collection completed successfully",
-				"jobID", job.ID,
+			mc.logger.V(1).Info("metrics collection completed successfully",
 				"metricsName", metrics.Name,
 				"protocol", metrics.Protocol,
 				"duration", duration,

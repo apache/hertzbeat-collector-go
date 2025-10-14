@@ -503,7 +503,7 @@ func (f *TransportClientFactory) CreateClient(protocol, addr string) (TransportC
 }
 
 // RegisterDefaultProcessors registers all default message processors for Netty client
-func RegisterDefaultNettyProcessors(client *NettyClient) {
+func RegisterDefaultNettyProcessors(client *NettyClient, scheduler JobScheduler) {
 	client.RegisterProcessor(MessageTypeHeartbeat, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
 			processor := &HeartbeatProcessor{}
@@ -538,7 +538,7 @@ func RegisterDefaultNettyProcessors(client *NettyClient) {
 
 	client.RegisterProcessor(MessageTypeIssueCyclicTask, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
-			processor := &CollectCyclicDataProcessor{client: nil}
+			processor := &CollectCyclicDataProcessor{client: nil, scheduler: scheduler}
 			return processor.Process(pbMsg)
 		}
 		return nil, fmt.Errorf("invalid message type")
@@ -546,7 +546,7 @@ func RegisterDefaultNettyProcessors(client *NettyClient) {
 
 	client.RegisterProcessor(MessageTypeDeleteCyclicTask, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
-			processor := &DeleteCyclicTaskProcessor{client: nil}
+			processor := &DeleteCyclicTaskProcessor{client: nil, scheduler: scheduler}
 			return processor.Process(pbMsg)
 		}
 		return nil, fmt.Errorf("invalid message type")
@@ -554,7 +554,7 @@ func RegisterDefaultNettyProcessors(client *NettyClient) {
 
 	client.RegisterProcessor(MessageTypeIssueOneTimeTask, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
-			processor := &CollectOneTimeDataProcessor{client: nil}
+			processor := &CollectOneTimeDataProcessor{client: nil, scheduler: scheduler}
 			return processor.Process(pbMsg)
 		}
 		return nil, fmt.Errorf("invalid message type")

@@ -17,29 +17,37 @@
 
 package job
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // Metrics represents a metric configuration
 type Metrics struct {
 	Name        string            `json:"name"`
+	I18n        interface{}       `json:"i18n,omitempty"` // Internationalization info
 	Priority    int               `json:"priority"`
+	CollectTime int64             `json:"collectTime"`
+	Interval    int64             `json:"interval"`
+	Visible     *bool             `json:"visible"`
 	Fields      []Field           `json:"fields"`
 	Aliasfields []string          `json:"aliasfields"`
-	Calculates  []Calculate       `json:"calculates"`
-	Units       []Unit            `json:"units"`
+	AliasFields []string          `json:"aliasFields"` // Alternative field name
+	Calculates  interface{}       `json:"calculates"`  // Can be []Calculate or []string
+	Filters     interface{}       `json:"filters"`
+	Units       interface{}       `json:"units"` // Can be []Unit or []string
 	Protocol    string            `json:"protocol"`
 	Host        string            `json:"host"`
 	Port        string            `json:"port"`
 	Timeout     string            `json:"timeout"`
-	Interval    int64             `json:"interval"`
 	Range       string            `json:"range"`
-	Visible     *bool             `json:"visible"`
 	ConfigMap   map[string]string `json:"configMap"`
+	HasSubTask  bool              `json:"hasSubTask"`
 
 	// Protocol specific fields
 	HTTP    *HTTPProtocol    `json:"http,omitempty"`
 	SSH     *SSHProtocol     `json:"ssh,omitempty"`
-	JDBC    *JDBCProtocol    `json:"jdbc,omitempty"`
+	JDBC    interface{}      `json:"jdbc,omitempty"` // Can be JDBCProtocol or map[string]interface{}
 	SNMP    *SNMPProtocol    `json:"snmp,omitempty"`
 	JMX     *JMXProtocol     `json:"jmx,omitempty"`
 	Redis   *RedisProtocol   `json:"redis,omitempty"`
@@ -54,6 +62,7 @@ type Field struct {
 	Unit     string      `json:"unit"`
 	Instance bool        `json:"instance"`
 	Value    interface{} `json:"value"`
+	I18n     interface{} `json:"i18n,omitempty"` // Internationalization info
 }
 
 // Calculate represents a calculation configuration
@@ -71,8 +80,10 @@ type Unit struct {
 
 // ParamDefine represents a parameter definition
 type ParamDefine struct {
+	ID           interface{} `json:"id"`
+	App          interface{} `json:"app"`
 	Field        string      `json:"field"`
-	Name         string      `json:"name"`
+	Name         interface{} `json:"name"` // Can be string or map[string]string for i18n
 	Type         string      `json:"type"`
 	Required     bool        `json:"required"`
 	DefaultValue interface{} `json:"defaultValue"`
@@ -80,8 +91,38 @@ type ParamDefine struct {
 	Range        string      `json:"range"`
 	Limit        int         `json:"limit"`
 	Options      []Option    `json:"options"`
-	Depend       *Depend     `json:"depend"`
+	KeyAlias     interface{} `json:"keyAlias"`
+	ValueAlias   interface{} `json:"valueAlias"`
 	Hide         bool        `json:"hide"`
+	Creator      interface{} `json:"creator"`
+	Modifier     interface{} `json:"modifier"`
+	GmtCreate    interface{} `json:"gmtCreate"`
+	GmtUpdate    interface{} `json:"gmtUpdate"`
+	Depend       *Depend     `json:"depend"`
+}
+
+// GetName returns the name as string, handling both string and i18n map cases
+func (p *ParamDefine) GetName() string {
+	switch v := p.Name.(type) {
+	case string:
+		return v
+	case map[string]interface{}:
+		// Try to get English name first, then any available language
+		if name, ok := v["en"]; ok {
+			if s, ok := name.(string); ok {
+				return s
+			}
+		}
+		// Fall back to first available name
+		for _, val := range v {
+			if s, ok := val.(string); ok {
+				return s
+			}
+		}
+		return "unknown"
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
 
 // Option represents a parameter option
@@ -156,18 +197,18 @@ type SSHProtocol struct {
 
 // JDBCProtocol represents JDBC protocol configuration
 type JDBCProtocol struct {
-	Host            string     `json:"host"`
-	Port            string     `json:"port"`
-	Platform        string     `json:"platform"`
-	Username        string     `json:"username"`
-	Password        string     `json:"password"`
-	Database        string     `json:"database"`
-	Timeout         string     `json:"timeout"`
-	QueryType       string     `json:"queryType"`
-	SQL             string     `json:"sql"`
-	URL             string     `json:"url"`
-	ReuseConnection string     `json:"reuseConnection"`
-	SSHTunnel       *SSHTunnel `json:"sshTunnel,omitempty"`
+	Host            string                 `json:"host"`
+	Port            string                 `json:"port"`
+	Platform        string                 `json:"platform"`
+	Username        string                 `json:"username"`
+	Password        string                 `json:"password"`
+	Database        string                 `json:"database"`
+	Timeout         string                 `json:"timeout"`
+	QueryType       string                 `json:"queryType"`
+	SQL             string                 `json:"sql"`
+	URL             string                 `json:"url"`
+	ReuseConnection string                 `json:"reuseConnection"`
+	SSHTunnel       map[string]interface{} `json:"sshTunnel,omitempty"`
 }
 
 // SNMPProtocol represents SNMP protocol configuration
@@ -270,7 +311,35 @@ func (j *Job) Clone() *Job {
 
 	if j.Metrics != nil {
 		clone.Metrics = make([]Metrics, len(j.Metrics))
-		copy(clone.Metrics, j.Metrics)
+		for i, metric := range j.Metrics {
+			clone.Metrics[i] = metric
+
+			// Deep copy ConfigMap for each metric to avoid concurrent access
+			if metric.ConfigMap != nil {
+				clone.Metrics[i].ConfigMap = make(map[string]string, len(metric.ConfigMap))
+				for k, v := range metric.ConfigMap {
+					clone.Metrics[i].ConfigMap[k] = v
+				}
+			}
+
+			// Deep copy Fields slice
+			if metric.Fields != nil {
+				clone.Metrics[i].Fields = make([]Field, len(metric.Fields))
+				copy(clone.Metrics[i].Fields, metric.Fields)
+			}
+
+			// Deep copy Aliasfields slice
+			if metric.Aliasfields != nil {
+				clone.Metrics[i].Aliasfields = make([]string, len(metric.Aliasfields))
+				copy(clone.Metrics[i].Aliasfields, metric.Aliasfields)
+			}
+
+			// Deep copy AliasFields slice
+			if metric.AliasFields != nil {
+				clone.Metrics[i].AliasFields = make([]string, len(metric.AliasFields))
+				copy(clone.Metrics[i].AliasFields, metric.AliasFields)
+			}
+		}
 	}
 
 	if j.Configmap != nil {
