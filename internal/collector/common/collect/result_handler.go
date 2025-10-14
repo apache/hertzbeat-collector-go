@@ -52,9 +52,8 @@ func (rh *ResultHandlerImpl) HandleCollectData(data *jobtypes.CollectRepMetricsD
 		return fmt.Errorf("collect data is nil")
 	}
 
-	rh.logger.Info("handling collect data",
-		"jobID", job.ID,
-		"monitorID", job.MonitorID,
+	// Debug level only for data handling
+	rh.logger.V(1).Info("handling collect data",
 		"metricsName", data.Metrics,
 		"code", data.Code,
 		"valuesCount", len(data.Values))
@@ -67,9 +66,9 @@ func (rh *ResultHandlerImpl) HandleCollectData(data *jobtypes.CollectRepMetricsD
 	// 4. Triggering alerts based on thresholds
 	// 5. Updating monitoring status
 
+	// Only log failures at INFO level, success at debug level
 	if data.Code == http.StatusOK {
-		rh.logger.Info("successfully processed collect data",
-			"jobID", job.ID,
+		rh.logger.V(1).Info("successfully processed collect data",
 			"metricsName", data.Metrics)
 	} else {
 		rh.logger.Info("received failed collect data",

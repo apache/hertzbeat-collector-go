@@ -45,8 +45,9 @@ const (
 )
 
 type Runner struct {
-	Config *configtypes.CollectorConfig
-	client transport.TransportClient
+	Config       *configtypes.CollectorConfig
+	client       transport.TransportClient
+	jobScheduler transport.JobScheduler
 	clrserver.Server
 }
 
@@ -57,6 +58,11 @@ func New(cfg *configtypes.CollectorConfig) *Runner {
 			Logger: logger.Logger{}, // Will be initialized properly in Start method
 		},
 	}
+}
+
+// SetJobScheduler sets the job scheduler for the transport runner
+func (r *Runner) SetJobScheduler(scheduler transport.JobScheduler) {
+	r.jobScheduler = scheduler
 }
 
 // NewFromConfig creates a new transport runner from collector configuration
@@ -150,7 +156,14 @@ func (r *Runner) Start(ctx context.Context) error {
 				r.Logger.Error(event.Error, "Failed to connect to manager gRPC server", "addr", event.Address)
 			}
 		})
-		transport.RegisterDefaultProcessors(c)
+		// Register processors with job scheduler
+		if r.jobScheduler != nil {
+			transport.RegisterDefaultProcessors(c, r.jobScheduler)
+			r.Logger.Info("Registered gRPC processors with job scheduler")
+		} else {
+			transport.RegisterDefaultProcessors(c, nil)
+			r.Logger.Info("Registered gRPC processors without job scheduler")
+		}
 	case *transport.NettyClient:
 		c.SetEventHandler(func(event transport.Event) {
 			switch event.Type {
@@ -163,7 +176,14 @@ func (r *Runner) Start(ctx context.Context) error {
 				r.Logger.Error(event.Error, "Failed to connect to manager netty server", "addr", event.Address)
 			}
 		})
-		transport.RegisterDefaultNettyProcessors(c)
+		// Register processors with job scheduler
+		if r.jobScheduler != nil {
+			transport.RegisterDefaultNettyProcessors(c, r.jobScheduler)
+			r.Logger.Info("Registered netty processors with job scheduler")
+		} else {
+			transport.RegisterDefaultNettyProcessors(c, nil)
+			r.Logger.Info("Registered netty processors without job scheduler")
+		}
 	}
 
 	if err := r.client.Start(); err != nil {

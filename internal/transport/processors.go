@@ -18,11 +18,18 @@
 package transport
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	pb "hertzbeat.apache.org/hertzbeat-collector-go/api"
+	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/crypto"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
 )
 
 // Message type constants matching Java version
@@ -44,6 +51,23 @@ type MessageProcessor interface {
 	Process(msg *pb.Message) (*pb.Message, error)
 }
 
+// JobScheduler defines the interface for job scheduling operations
+// This interface allows transport layer to interact with job scheduling without direct dependencies
+type JobScheduler interface {
+	// AddAsyncCollectJob adds a job to async collection scheduling
+	AddAsyncCollectJob(job *jobtypes.Job) error
+
+	// RemoveAsyncCollectJob removes a job from scheduling
+	RemoveAsyncCollectJob(jobID int64) error
+}
+
+// preprocessJobPasswords is a helper function to decrypt passwords in job configmap
+// This should be called once when receiving a job to avoid repeated decryption
+func preprocessJobPasswords(job *jobtypes.Job) error {
+	replacer := param.NewReplacer()
+	return replacer.PreprocessJobPasswords(job)
+}
+
 // HeartbeatProcessor handles heartbeat messages
 type HeartbeatProcessor struct{}
 
@@ -63,7 +87,31 @@ func NewGoOnlineProcessor(client *GrpcClient) *GoOnlineProcessor {
 }
 
 func (p *GoOnlineProcessor) Process(msg *pb.Message) (*pb.Message, error) {
-	// Handle go online message
+	log := logger.DefaultLogger(os.Stdout, loggertype.LogLevelInfo).WithName("go-online-processor")
+
+	// Handle go online message - parse ServerInfo and extract AES secret
+	log.Info("received GO_ONLINE message from manager")
+
+	if len(msg.Msg) == 0 {
+		log.Info("empty message from server, please upgrade server")
+	} else {
+		// Parse ServerInfo from message (matches Java: JsonUtil.fromJson(message.getMsg().toStringUtf8(), ServerInfo.class))
+		var serverInfo struct {
+			AesSecret string `json:"aesSecret"`
+		}
+
+		if err := json.Unmarshal(msg.Msg, &serverInfo); err != nil {
+			log.Error(err, "failed to parse ServerInfo from manager")
+		} else if serverInfo.AesSecret == "" {
+			log.Info("server response has empty secret, please check configuration")
+		} else {
+			// Set the AES secret key globally (matches Java: AesUtil.setDefaultSecretKey(serverInfo.getAesSecret()))
+			log.Info("received AES secret from manager", "keyLength", len(serverInfo.AesSecret))
+			crypto.SetDefaultSecretKey(serverInfo.AesSecret)
+		}
+	}
+
+	log.Info("online message processed successfully")
 	return &pb.Message{
 		Type:      pb.MessageType_GO_ONLINE,
 		Direction: pb.Direction_RESPONSE,
@@ -128,65 +176,238 @@ func (p *GoCloseProcessor) Process(msg *pb.Message) (*pb.Message, error) {
 
 // CollectCyclicDataProcessor handles cyclic task messages
 type CollectCyclicDataProcessor struct {
-	client *GrpcClient
+	client    *GrpcClient
+	scheduler JobScheduler
 }
 
-func NewCollectCyclicDataProcessor(client *GrpcClient) *CollectCyclicDataProcessor {
-	return &CollectCyclicDataProcessor{client: client}
+func NewCollectCyclicDataProcessor(client *GrpcClient, scheduler JobScheduler) *CollectCyclicDataProcessor {
+	return &CollectCyclicDataProcessor{
+		client:    client,
+		scheduler: scheduler,
+	}
 }
 
 func (p *CollectCyclicDataProcessor) Process(msg *pb.Message) (*pb.Message, error) {
-	// Handle cyclic task message
-	// TODO: Implement actual task processing logic
+	log := logger.DefaultLogger(os.Stdout, loggertype.LogLevelInfo).WithName("cyclic-task-processor")
+	log.Info("processing cyclic task message", "identity", msg.Identity)
+
+	if p.scheduler == nil {
+		log.Info("no job scheduler available, cannot process cyclic task")
+		return &pb.Message{
+			Type:      pb.MessageType_ISSUE_CYCLIC_TASK,
+			Direction: pb.Direction_RESPONSE,
+			Identity:  msg.Identity,
+			Msg:       []byte("no job scheduler available"),
+		}, nil
+	}
+
+	// Parse job from message
+	log.Info("Received cyclic task JSON: %s", string(msg.Msg))
+
+	var job jobtypes.Job
+	if err := json.Unmarshal(msg.Msg, &job); err != nil {
+		log.Error(err, "Failed to unmarshal job from cyclic task message: %v")
+		return &pb.Message{
+			Type:      pb.MessageType_ISSUE_CYCLIC_TASK,
+			Direction: pb.Direction_RESPONSE,
+			Identity:  msg.Identity,
+			Msg:       []byte(fmt.Sprintf("failed to parse job: %v", err)),
+		}, nil
+	}
+
+	// Preprocess passwords once (decrypt encrypted passwords in configmap)
+	// This avoids repeated decryption during each task execution
+	if err := preprocessJobPasswords(&job); err != nil {
+		log.Error(err, "Failed to preprocess job passwords")
+	}
+
+	// Ensure job is marked as cyclic
+	job.IsCyclic = true
+
+	log.Info("Adding cyclic job to scheduler",
+		"jobID", job.ID,
+		"monitorID", job.MonitorID,
+		"app", job.App)
+
+	// Add job to scheduler
+	if err := p.scheduler.AddAsyncCollectJob(&job); err != nil {
+		log.Error(err, "Failed to add cyclic job to scheduler: %v")
+		return &pb.Message{
+			Type:      pb.MessageType_ISSUE_CYCLIC_TASK,
+			Direction: pb.Direction_RESPONSE,
+			Identity:  msg.Identity,
+			Msg:       []byte(fmt.Sprintf("failed to schedule job: %v", err)),
+		}, nil
+	}
+
 	return &pb.Message{
 		Type:      pb.MessageType_ISSUE_CYCLIC_TASK,
 		Direction: pb.Direction_RESPONSE,
 		Identity:  msg.Identity,
-		Msg:       []byte("cyclic task ack"),
+		Msg:       []byte("cyclic task scheduled successfully"),
 	}, nil
 }
 
 // DeleteCyclicTaskProcessor handles delete cyclic task messages
 type DeleteCyclicTaskProcessor struct {
-	client *GrpcClient
+	client    *GrpcClient
+	scheduler JobScheduler
 }
 
-func NewDeleteCyclicTaskProcessor(client *GrpcClient) *DeleteCyclicTaskProcessor {
-	return &DeleteCyclicTaskProcessor{client: client}
+func NewDeleteCyclicTaskProcessor(client *GrpcClient, scheduler JobScheduler) *DeleteCyclicTaskProcessor {
+	return &DeleteCyclicTaskProcessor{
+		client:    client,
+		scheduler: scheduler,
+	}
 }
 
 func (p *DeleteCyclicTaskProcessor) Process(msg *pb.Message) (*pb.Message, error) {
-	// Handle delete cyclic task message
+	log.Printf("Processing delete cyclic task message, identity: %s", msg.Identity)
+
+	if p.scheduler == nil {
+		log.Printf("No job scheduler available, cannot process delete cyclic task")
+		return &pb.Message{
+			Type:      pb.MessageType_DELETE_CYCLIC_TASK,
+			Direction: pb.Direction_RESPONSE,
+			Identity:  msg.Identity,
+			Msg:       []byte("no job scheduler available"),
+		}, nil
+	}
+
+	// Parse job IDs from message - could be a single job ID or array of IDs
+	var jobIDs []int64
+
+	// Try to parse as array first
+	if err := json.Unmarshal(msg.Msg, &jobIDs); err != nil {
+		// If array parsing fails, try single job ID
+		var singleJobID int64
+		if err2 := json.Unmarshal(msg.Msg, &singleJobID); err2 != nil {
+			log.Printf("Failed to unmarshal job IDs from delete message: %v, %v", err, err2)
+			return &pb.Message{
+				Type:      pb.MessageType_DELETE_CYCLIC_TASK,
+				Direction: pb.Direction_RESPONSE,
+				Identity:  msg.Identity,
+				Msg:       []byte(fmt.Sprintf("failed to parse job IDs: %v", err)),
+			}, nil
+		}
+		jobIDs = []int64{singleJobID}
+	}
+
+	log.Printf("Removing %d cyclic jobs from scheduler: %v", len(jobIDs), jobIDs)
+
+	// Remove jobs from scheduler
+	var errors []string
+	for _, jobID := range jobIDs {
+		if err := p.scheduler.RemoveAsyncCollectJob(jobID); err != nil {
+			log.Printf("Failed to remove job %d from scheduler: %v", jobID, err)
+			errors = append(errors, fmt.Sprintf("job %d: %v", jobID, err))
+		} else {
+			log.Printf("Successfully removed job %d from scheduler", jobID)
+		}
+	}
+
+	// Prepare response message
+	var responseMsg string
+	if len(errors) > 0 {
+		responseMsg = fmt.Sprintf("partially completed, errors: %v", errors)
+	} else {
+		responseMsg = "all cyclic tasks removed successfully"
+	}
+
 	return &pb.Message{
 		Type:      pb.MessageType_DELETE_CYCLIC_TASK,
 		Direction: pb.Direction_RESPONSE,
 		Identity:  msg.Identity,
-		Msg:       []byte("delete cyclic task ack"),
+		Msg:       []byte(responseMsg),
 	}, nil
 }
 
 // CollectOneTimeDataProcessor handles one-time task messages
 type CollectOneTimeDataProcessor struct {
-	client *GrpcClient
+	client    *GrpcClient
+	scheduler JobScheduler
 }
 
-func NewCollectOneTimeDataProcessor(client *GrpcClient) *CollectOneTimeDataProcessor {
-	return &CollectOneTimeDataProcessor{client: client}
+func NewCollectOneTimeDataProcessor(client *GrpcClient, scheduler JobScheduler) *CollectOneTimeDataProcessor {
+	return &CollectOneTimeDataProcessor{
+		client:    client,
+		scheduler: scheduler,
+	}
 }
 
 func (p *CollectOneTimeDataProcessor) Process(msg *pb.Message) (*pb.Message, error) {
-	// Handle one-time task message
-	// TODO: Implement actual task processing logic
+	log.Printf("Processing one-time task message, identity: %s", msg.Identity)
+
+	if p.scheduler == nil {
+		log.Printf("No job scheduler available, cannot process one-time task")
+		return &pb.Message{
+			Type:      pb.MessageType_ISSUE_ONE_TIME_TASK,
+			Direction: pb.Direction_RESPONSE,
+			Identity:  msg.Identity,
+			Msg:       []byte("no job scheduler available"),
+		}, nil
+	}
+
+	// Parse job from message
+	log.Printf("Received one-time task JSON: %s", string(msg.Msg))
+
+	// Parse JSON to check interval values before unmarshaling
+	var rawJob map[string]interface{}
+	if err := json.Unmarshal(msg.Msg, &rawJob); err == nil {
+		if defaultInterval, ok := rawJob["defaultInterval"]; ok {
+			log.Printf("DEBUG: Raw defaultInterval from JSON: %v (type: %T)", defaultInterval, defaultInterval)
+		}
+		if interval, ok := rawJob["interval"]; ok {
+			log.Printf("DEBUG: Raw interval from JSON: %v (type: %T)", interval, interval)
+		}
+	}
+
+	var job jobtypes.Job
+	if err := json.Unmarshal(msg.Msg, &job); err != nil {
+		log.Printf("Failed to unmarshal job from one-time task message: %v", err)
+		log.Printf("JSON content: %s", string(msg.Msg))
+		return &pb.Message{
+			Type:      pb.MessageType_ISSUE_ONE_TIME_TASK,
+			Direction: pb.Direction_RESPONSE,
+			Identity:  msg.Identity,
+			Msg:       []byte(fmt.Sprintf("failed to parse job: %v", err)),
+		}, nil
+	}
+
+	// Preprocess passwords once (decrypt encrypted passwords in configmap)
+	// This avoids repeated decryption during each task execution
+	if err := preprocessJobPasswords(&job); err != nil {
+		log.Printf("Failed to preprocess job passwords: %v", err)
+	}
+
+	// Ensure job is marked as non-cyclic
+	job.IsCyclic = false
+
+	log.Printf("Adding one-time job to scheduler: jobID=%d, monitorID=%d, app=%s",
+		job.ID, job.MonitorID, job.App)
+
+	// Add job to scheduler
+	if err := p.scheduler.AddAsyncCollectJob(&job); err != nil {
+		log.Printf("Failed to add one-time job to scheduler: %v", err)
+		return &pb.Message{
+			Type:      pb.MessageType_ISSUE_ONE_TIME_TASK,
+			Direction: pb.Direction_RESPONSE,
+			Identity:  msg.Identity,
+			Msg:       []byte(fmt.Sprintf("failed to schedule job: %v", err)),
+		}, nil
+	}
+
+	log.Printf("Successfully scheduled one-time job: jobID=%d", job.ID)
 	return &pb.Message{
 		Type:      pb.MessageType_ISSUE_ONE_TIME_TASK,
 		Direction: pb.Direction_RESPONSE,
 		Identity:  msg.Identity,
-		Msg:       []byte("one-time task ack"),
+		Msg:       []byte("one-time task scheduled successfully"),
 	}, nil
 }
 
 // RegisterDefaultProcessors registers all default message processors
-func RegisterDefaultProcessors(client *GrpcClient) {
+func RegisterDefaultProcessors(client *GrpcClient, scheduler JobScheduler) {
 	client.RegisterProcessor(MessageTypeHeartbeat, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
 			processor := &HeartbeatProcessor{}
@@ -221,7 +442,7 @@ func RegisterDefaultProcessors(client *GrpcClient) {
 
 	client.RegisterProcessor(MessageTypeIssueCyclicTask, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
-			processor := NewCollectCyclicDataProcessor(client)
+			processor := NewCollectCyclicDataProcessor(client, scheduler)
 			return processor.Process(pbMsg)
 		}
 		return nil, fmt.Errorf("invalid message type")
@@ -229,7 +450,7 @@ func RegisterDefaultProcessors(client *GrpcClient) {
 
 	client.RegisterProcessor(MessageTypeDeleteCyclicTask, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
-			processor := NewDeleteCyclicTaskProcessor(client)
+			processor := NewDeleteCyclicTaskProcessor(client, scheduler)
 			return processor.Process(pbMsg)
 		}
 		return nil, fmt.Errorf("invalid message type")
@@ -237,7 +458,7 @@ func RegisterDefaultProcessors(client *GrpcClient) {
 
 	client.RegisterProcessor(MessageTypeIssueOneTimeTask, func(msg interface{}) (interface{}, error) {
 		if pbMsg, ok := msg.(*pb.Message); ok {
-			processor := NewCollectOneTimeDataProcessor(client)
+			processor := NewCollectOneTimeDataProcessor(client, scheduler)
 			return processor.Process(pbMsg)
 		}
 		return nil, fmt.Errorf("invalid message type")

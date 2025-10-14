@@ -30,9 +30,9 @@ type Job struct {
 	Hide                bool              `json:"hide"`
 	Category            string            `json:"category"`
 	App                 string            `json:"app"`
-	Name                map[string]string `json:"name"`
-	Help                map[string]string `json:"help"`
-	HelpLink            map[string]string `json:"helpLink"`
+	Name                interface{}       `json:"name"`     // Can be string or map[string]string for i18n
+	Help                interface{}       `json:"help"`     // Can be string or map[string]string for i18n
+	HelpLink            interface{}       `json:"helpLink"` // Can be string or map[string]string for i18n
 	Timestamp           int64             `json:"timestamp"`
 	DefaultInterval     int64             `json:"defaultInterval"`
 	Intervals           []int64           `json:"intervals"`
@@ -41,7 +41,10 @@ type Job struct {
 	Metrics             []Metrics         `json:"metrics"`
 	Configmap           []Configmap       `json:"configmap"`
 	IsSd                bool              `json:"isSd"`
+	Sd                  bool              `json:"sd"`
 	PrometheusProxyMode bool              `json:"prometheusProxyMode"`
+	Cyclic              bool              `json:"cyclic"`
+	Interval            int64             `json:"interval"`
 
 	// Internal fields
 	EnvConfigmaps    map[string]Configmap `json:"-"`
