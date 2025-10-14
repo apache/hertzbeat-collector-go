@@ -29,8 +29,8 @@ import (
 
 // ResultHandlerImpl implements the ResultHandler interface
 type ResultHandlerImpl struct {
-	logger logger.Logger
-	// TODO: Add data queue or storage interface when needed
+	logger        logger.Logger
+	messageRouter MessageRouter // Message router for sending results back to Manager
 }
 
 // ResultHandler interface for handling collection results
@@ -39,9 +39,10 @@ type ResultHandler interface {
 }
 
 // NewResultHandler creates a new result handler
-func NewResultHandler(logger logger.Logger) ResultHandler {
+func NewResultHandler(logger logger.Logger, messageRouter MessageRouter) ResultHandler {
 	return &ResultHandlerImpl{
-		logger: logger.WithName("result-handler"),
+		logger:        logger.WithName("result-handler"),
+		messageRouter: messageRouter,
 	}
 }
 
@@ -58,24 +59,31 @@ func (rh *ResultHandlerImpl) HandleCollectData(data *jobtypes.CollectRepMetricsD
 		"code", data.Code,
 		"valuesCount", len(data.Values))
 
-	// TODO: Implement actual data processing logic
-	// This could include:
-	// 1. Data validation and transformation
-	// 2. Sending to message queue
-	// 3. Storing to database
-	// 4. Triggering alerts based on thresholds
-	// 5. Updating monitoring status
+	// Send collection result back to Manager via MessageRouter
+	if rh.messageRouter != nil {
+		if err := rh.messageRouter.SendResult(data, job); err != nil {
+			rh.logger.Error(err, "failed to send collection result to Manager",
+				"jobID", job.ID,
+				"metricsName", data.Metrics)
+			return fmt.Errorf("failed to send result to Manager: %w", err)
+		}
 
-	// Only log failures at INFO level, success at debug level
-	if data.Code == http.StatusOK {
-		rh.logger.V(1).Info("successfully processed collect data",
-			"metricsName", data.Metrics)
+		// Log successful result sending
+		if data.Code == http.StatusOK {
+			rh.logger.V(1).Info("successfully sent collection result to Manager",
+				"metricsName", data.Metrics)
+		} else {
+			rh.logger.Info("sent failed collection result to Manager",
+				"jobID", job.ID,
+				"metricsName", data.Metrics,
+				"code", data.Code,
+				"message", data.Msg)
+		}
 	} else {
-		rh.logger.Info("received failed collect data",
+		rh.logger.Error(nil, "messageRouter is nil, cannot send result to Manager",
 			"jobID", job.ID,
-			"metricsName", data.Metrics,
-			"code", data.Code,
-			"message", data.Msg)
+			"metricsName", data.Metrics)
+		return fmt.Errorf("messageRouter is nil")
 	}
 
 	return nil

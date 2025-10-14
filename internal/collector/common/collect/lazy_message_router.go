@@ -35,6 +35,11 @@ import (
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
+// MessageRouter defines the interface for sending collection results
+type MessageRouter interface {
+	SendResult(data *jobtypes.CollectRepMetricsData, job *jobtypes.Job) error
+}
+
 // TransportRunner interface for getting transport client
 type TransportRunner interface {
 	GetClient() transport.TransportClient
@@ -68,7 +73,7 @@ func (l *LazyMessageRouter) SendResult(data *jobtypes.CollectRepMetricsData, job
 	client := l.transportRunner.GetClient()
 	if client == nil || !client.IsStarted() {
 		l.logger.V(1).Info("transport client not ready, dropping result",
-			"jobID", job.ID,
+			"jobID", job.MonitorID,
 			"metricsName", data.Metrics,
 			"isCyclic", job.IsCyclic)
 		return fmt.Errorf("transport client not ready")
