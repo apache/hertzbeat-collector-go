@@ -77,7 +77,7 @@ func (mc *MetricsCollector) CollectMetrics(metrics *jobtypes.Metrics, job *jobty
 
 		// Enrich result with job information
 		if result != nil {
-			result.ID = job.ID
+			result.ID = job.MonitorID // Use MonitorID for both ID and MonitorID fields
 			result.MonitorID = job.MonitorID
 			result.App = job.App
 			result.TenantID = job.TenantID
@@ -127,7 +127,7 @@ func (mc *MetricsCollector) CollectMetrics(metrics *jobtypes.Metrics, job *jobty
 // createErrorResponse creates an error response for failed collections
 func (mc *MetricsCollector) createErrorResponse(metrics *jobtypes.Metrics, job *jobtypes.Job, code int, message string) *jobtypes.CollectRepMetricsData {
 	return &jobtypes.CollectRepMetricsData{
-		ID:        job.ID,
+		ID:        job.MonitorID, // Use MonitorID for both ID and MonitorID fields
 		MonitorID: job.MonitorID,
 		TenantID:  job.TenantID,
 		App:       job.App,

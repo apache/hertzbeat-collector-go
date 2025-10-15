@@ -17,12 +17,11 @@
 
 _run:
 	@$(MAKE) --warn-undefined-variables \
-	-f tools/make/common.mk \
-	-f tools/make/golang.mk \
-	-f tools/make/linter.mk \
-	-f tools/make/image.mk \
-	-f tools/make/tools.mk \
-	$(MAKECMDGOALS)
+		-f tools/make/common.mk \
+		-f tools/make/golang.mk \
+		-f tools/make/linter.mk \
+		-f tools/make/tools.mk \
+		$(MAKECMDGOALS)
 
 .PHONY: _run
 

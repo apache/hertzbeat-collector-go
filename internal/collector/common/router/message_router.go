@@ -39,8 +39,8 @@ const (
 	MessageTypeIssueCyclicTask          int32 = 4
 	MessageTypeDeleteCyclicTask         int32 = 5
 	MessageTypeIssueOneTimeTask         int32 = 6
-	MessageTypeResponseCyclicTaskData   int32 = 7
-	MessageTypeResponseOneTimeTaskData  int32 = 8
+	MessageTypeResponseOneTimeTaskData  int32 = 7
+	MessageTypeResponseCyclicTaskData   int32 = 8
 	MessageTypeResponseCyclicTaskSdData int32 = 9
 )
 
@@ -245,7 +245,7 @@ func (r *MessageRouterImpl) SendResult(data *jobtypes.CollectRepMetricsData, job
 	// Create message
 	msg := &pb.Message{
 		Type:      msgType,
-		Direction: pb.Direction_REQUEST,
+		Direction: pb.Direction_RESPONSE,
 		Identity:  r.identity,
 		Msg:       dataBytes,
 	}

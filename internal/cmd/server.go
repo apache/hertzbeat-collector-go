@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/cobra"
 
 	bannerouter "hertzbeat.apache.org/hertzbeat-collector-go/internal/banner"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect"
 	jobserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/job"
 	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
 	transportserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/transport"
@@ -108,14 +109,20 @@ func server(ctx context.Context, logOut io.Writer) error {
 }
 
 func startRunners(ctx context.Context, cfg *clrserver.Server) error {
-	// Create job server first
+	// Create transport server first
+	transportRunner := transportserver.NewFromConfig(cfg.Config)
+
+	// Create lazy message router that can get transport client when needed
+	messageRouter := collect.NewLazyMessageRouter(transportRunner, cfg.Logger, cfg.Config.Collector.Identity)
+
+	// Create job server with message router
 	jobRunner := jobserver.New(&jobserver.Config{
-		Server: *cfg,
+		Server:        *cfg,
+		MessageRouter: messageRouter,
 	})
 
-	// Create transport server and connect it to job server
-	transportRunner := transportserver.NewFromConfig(cfg.Config)
-	transportRunner.SetJobScheduler(jobRunner) // Connect transport to job scheduler
+	// Connect transport to job scheduler
+	transportRunner.SetJobScheduler(jobRunner)
 
 	runners := []struct {
 		runner Runner[collectortypes.Info]

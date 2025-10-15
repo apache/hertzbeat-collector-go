@@ -41,8 +41,8 @@ const (
 	MessageTypeIssueCyclicTask          int32 = 4
 	MessageTypeDeleteCyclicTask         int32 = 5
 	MessageTypeIssueOneTimeTask         int32 = 6
-	MessageTypeResponseCyclicTaskData   int32 = 7
-	MessageTypeResponseOneTimeTaskData  int32 = 8
+	MessageTypeResponseOneTimeTaskData  int32 = 7
+	MessageTypeResponseCyclicTaskData   int32 = 8
 	MessageTypeResponseCyclicTaskSdData int32 = 9
 )
 
