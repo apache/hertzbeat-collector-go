@@ -21,6 +21,7 @@ package basic
 
 import (
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic/database"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic/ssh"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect/strategy"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
@@ -32,6 +33,10 @@ func init() {
 	// To add a new protocol, simply add a line here
 	strategy.RegisterFactory("jdbc", func(logger logger.Logger) strategy.Collector {
 		return database.NewJDBCCollector(logger)
+	})
+
+	strategy.RegisterFactory("ssh", func(logger logger.Logger) strategy.Collector {
+		return ssh.NewSSHCollector(logger)
 	})
 
 	// More protocols can be added here in the future:

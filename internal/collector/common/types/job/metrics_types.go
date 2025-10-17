@@ -31,9 +31,8 @@ type Metrics struct {
 	Interval    int64             `json:"interval"`
 	Visible     *bool             `json:"visible"`
 	Fields      []Field           `json:"fields"`
-	Aliasfields []string          `json:"aliasfields"`
-	AliasFields []string          `json:"aliasFields"` // Alternative field name
-	Calculates  interface{}       `json:"calculates"`  // Can be []Calculate or []string
+	AliasFields []string          `json:"aliasFields"`
+	Calculates  interface{}       `json:"calculates"` // Can be []Calculate or []string
 	Filters     interface{}       `json:"filters"`
 	Units       interface{}       `json:"units"` // Can be []Unit or []string
 	Protocol    string            `json:"protocol"`
@@ -46,7 +45,7 @@ type Metrics struct {
 
 	// Protocol specific fields
 	HTTP    *HTTPProtocol    `json:"http,omitempty"`
-	SSH     *SSHProtocol     `json:"ssh,omitempty"`
+	SSH     interface{}      `json:"ssh,omitempty"`  // Can be SSHProtocol
 	JDBC    interface{}      `json:"jdbc,omitempty"` // Can be JDBCProtocol or map[string]interface{}
 	SNMP    *SNMPProtocol    `json:"snmp,omitempty"`
 	JMX     *JMXProtocol     `json:"jmx,omitempty"`
@@ -185,14 +184,23 @@ type HTTPProtocol struct {
 
 // SSHProtocol represents SSH protocol configuration
 type SSHProtocol struct {
-	Host        string `json:"host"`
-	Port        int    `json:"port"`
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	PrivateKey  string `json:"privateKey"`
-	Script      string `json:"script"`
-	ParseScript string `json:"parseScript"`
-	Timeout     int    `json:"timeout"`
+	Host                 string `json:"host"`
+	Port                 string `json:"port"`
+	Username             string `json:"username"`
+	Password             string `json:"password"`
+	PrivateKey           string `json:"privateKey"`
+	PrivateKeyPassphrase string `json:"privateKeyPassphrase"`
+	Script               string `json:"script"`
+	ParseType            string `json:"parseType"`
+	ParseScript          string `json:"parseScript"`
+	Timeout              string `json:"timeout"`
+	ReuseConnection      string `json:"reuseConnection"`
+	UseProxy             string `json:"useProxy"`
+	ProxyHost            string `json:"proxyHost"`
+	ProxyPort            string `json:"proxyPort"`
+	ProxyUsername        string `json:"proxyUsername"`
+	ProxyPassword        string `json:"proxyPassword"`
+	ProxyPrivateKey      string `json:"proxyPrivateKey"`
 }
 
 // JDBCProtocol represents JDBC protocol configuration
@@ -326,12 +334,6 @@ func (j *Job) Clone() *Job {
 			if metric.Fields != nil {
 				clone.Metrics[i].Fields = make([]Field, len(metric.Fields))
 				copy(clone.Metrics[i].Fields, metric.Fields)
-			}
-
-			// Deep copy Aliasfields slice
-			if metric.Aliasfields != nil {
-				clone.Metrics[i].Aliasfields = make([]string, len(metric.Aliasfields))
-				copy(clone.Metrics[i].Aliasfields, metric.Aliasfields)
 			}
 
 			// Deep copy AliasFields slice

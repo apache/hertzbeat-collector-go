@@ -17,6 +17,14 @@
 
 package job
 
+import (
+	"log"
+	"math"
+	"sort"
+	"sync"
+	"time"
+)
+
 // hertzbeat Collect Job related types
 
 // Job represents a complete monitoring job
@@ -49,8 +57,10 @@ type Job struct {
 	// Internal fields
 	EnvConfigmaps    map[string]Configmap `json:"-"`
 	DispatchTime     int64                `json:"-"`
-	PriorMetrics     []Metrics            `json:"-"`
+	PriorMetrics     [][]*Metrics         `json:"-"` // LinkedList of Set<Metrics>
 	ResponseDataTemp []MetricsData        `json:"-"`
+
+	mu sync.Mutex // Mutex for thread-safe operations
 }
 
 // NextCollectMetrics returns the metrics that should be collected next
@@ -65,7 +75,85 @@ func (j *Job) NextCollectMetrics() []*Metrics {
 }
 
 // ConstructPriorMetrics prepares prior metrics for collection dependencies
+// This method filters metrics that need to be collected based on time,
+// sets default values, groups by priority, and constructs an ordered collection queue
 func (j *Job) ConstructPriorMetrics() {
-	j.PriorMetrics = make([]Metrics, len(j.Metrics))
-	copy(j.PriorMetrics, j.Metrics)
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	now := time.Now().UnixMilli()
+
+	// Filter metrics that need to be collected and set default values
+	currentCollectMetrics := make(map[int][]*Metrics)
+
+	for i := range j.Metrics {
+		metric := &j.Metrics[i]
+
+		// Check if it's time to collect this metric
+		if now >= metric.CollectTime+metric.Interval*1000 {
+			// Update collect time
+			metric.CollectTime = now
+
+			// Set default AliasFields if not configured
+			if len(metric.AliasFields) == 0 && len(metric.Fields) > 0 {
+				aliasFields := make([]string, len(metric.Fields))
+				for idx, field := range metric.Fields {
+					aliasFields[idx] = field.Field
+				}
+				metric.AliasFields = aliasFields
+			}
+
+			// Group by priority
+			priority := metric.Priority
+			currentCollectMetrics[priority] = append(currentCollectMetrics[priority], metric)
+		}
+	}
+
+	// If no metrics need to be collected, add the default availability metric (priority 0)
+	if len(currentCollectMetrics) == 0 {
+		for i := range j.Metrics {
+			metric := &j.Metrics[i]
+			if metric.Priority == 0 {
+				metric.CollectTime = now
+				currentCollectMetrics[0] = []*Metrics{metric}
+				break
+			}
+		}
+
+		// If still empty, log error
+		if len(currentCollectMetrics) == 0 {
+			log.Println("ERROR: metrics must has one priority 0 metrics at least.")
+		}
+	}
+
+	// Construct a linked list (slice) of task execution order of the metrics
+	// Each element is a set (slice) of metrics with the same priority
+	j.PriorMetrics = make([][]*Metrics, 0, len(currentCollectMetrics))
+
+	for _, metricsSet := range currentCollectMetrics {
+		// Make a copy to ensure thread safety
+		metricsCopy := make([]*Metrics, len(metricsSet))
+		copy(metricsCopy, metricsSet)
+		j.PriorMetrics = append(j.PriorMetrics, metricsCopy)
+	}
+
+	// Sort by priority (ascending order)
+	sort.Slice(j.PriorMetrics, func(i, k int) bool {
+		// Get priority from the first metric in each set
+		var iPriority, kPriority int = math.MaxInt, math.MaxInt
+
+		if len(j.PriorMetrics[i]) > 0 && j.PriorMetrics[i][0] != nil {
+			iPriority = j.PriorMetrics[i][0].Priority
+		}
+		if len(j.PriorMetrics[k]) > 0 && j.PriorMetrics[k][0] != nil {
+			kPriority = j.PriorMetrics[k][0].Priority
+		}
+
+		return iPriority < kPriority
+	})
+
+	// Initialize EnvConfigmaps
+	if j.EnvConfigmaps == nil {
+		j.EnvConfigmaps = make(map[string]Configmap, 8)
+	}
 }

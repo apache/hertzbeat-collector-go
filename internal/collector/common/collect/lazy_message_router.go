@@ -183,26 +183,6 @@ func (l *LazyMessageRouter) serializeToArrow(dataList []*jobtypes.CollectRepMetr
 
 // createArrowRecordBatch creates Arrow RecordBatch for single MetricsData, compatible with Java Manager
 func (l *LazyMessageRouter) createArrowRecordBatch(mem memory.Allocator, data *jobtypes.CollectRepMetricsData) (arrow.Record, error) {
-	// Create metadata for fields (all fields use the same default metadata)
-	emptyMetadata := arrow.MetadataFrom(map[string]string{
-		"type":  "1",
-		"label": "false",
-		"unit":  "none",
-	})
-
-	// Define metadata fields (fixed fields)
-	metadataFields := []arrow.Field{
-		{Name: "app", Type: arrow.BinaryTypes.String, Nullable: true, Metadata: emptyMetadata},
-		{Name: "metrics", Type: arrow.BinaryTypes.String, Nullable: true, Metadata: emptyMetadata},
-		{Name: "id", Type: arrow.BinaryTypes.String, Nullable: true, Metadata: emptyMetadata},
-		{Name: "monitorId", Type: arrow.BinaryTypes.String, Nullable: true, Metadata: emptyMetadata},
-		{Name: "tenantId", Type: arrow.BinaryTypes.String, Nullable: true, Metadata: emptyMetadata},
-		{Name: "priority", Type: arrow.BinaryTypes.String, Nullable: true, Metadata: emptyMetadata},
-		{Name: "time", Type: arrow.BinaryTypes.String, Nullable: true, Metadata: emptyMetadata},
-		{Name: "code", Type: arrow.BinaryTypes.String, Nullable: true, Metadata: emptyMetadata},
-		{Name: "msg", Type: arrow.BinaryTypes.String, Nullable: true, Metadata: emptyMetadata},
-	}
-
 	// Add dynamic fields (based on collected field definitions)
 	dynamicFields := make([]arrow.Field, 0, len(data.Fields))
 	for _, field := range data.Fields {
@@ -230,9 +210,8 @@ func (l *LazyMessageRouter) createArrowRecordBatch(mem memory.Allocator, data *j
 		})
 	}
 
-	// Merge all fields
-	allFields := make([]arrow.Field, 0, len(metadataFields)+len(dynamicFields))
-	allFields = append(allFields, metadataFields...)
+	// Merge dynamic fields only, as metadata fields are not needed in final schema
+	allFields := make([]arrow.Field, 0, len(dynamicFields))
 	allFields = append(allFields, dynamicFields...)
 
 	// Create schema-level metadata
@@ -268,33 +247,20 @@ func (l *LazyMessageRouter) createArrowRecordBatch(mem memory.Allocator, data *j
 
 	// Fill data
 	for rowIdx := 0; rowIdx < rowCount; rowIdx++ {
-		// Fill metadata fields
-		builders[0].(*array.StringBuilder).Append(data.App)
-		builders[1].(*array.StringBuilder).Append(data.Metrics)
-		builders[2].(*array.StringBuilder).Append(fmt.Sprintf("%d", data.ID))
-		builders[3].(*array.StringBuilder).Append(fmt.Sprintf("%d", data.MonitorID))
-		builders[4].(*array.StringBuilder).Append(fmt.Sprintf("%d", data.TenantID))
-		builders[5].(*array.StringBuilder).Append(fmt.Sprintf("%d", data.Priority))
-		builders[6].(*array.StringBuilder).Append(fmt.Sprintf("%d", data.Time))
-		builders[7].(*array.StringBuilder).Append(fmt.Sprintf("%d", data.Code))
-		builders[8].(*array.StringBuilder).Append(data.Msg)
-
 		// Fill dynamic field data
 		if rowIdx < len(data.Values) {
 			valueRow := data.Values[rowIdx]
-			for i, _ := range data.Fields {
-				builderIdx := len(metadataFields) + i
+			for i := range data.Fields {
 				var value string
 				if i < len(valueRow.Columns) {
 					value = valueRow.Columns[i]
 				}
-				builders[builderIdx].(*array.StringBuilder).Append(value)
+				builders[i].(*array.StringBuilder).Append(value)
 			}
 		} else {
 			// Fill empty values
 			for i := range data.Fields {
-				builderIdx := len(metadataFields) + i
-				builders[builderIdx].(*array.StringBuilder).Append("")
+				builders[i].(*array.StringBuilder).Append("")
 			}
 		}
 	}
