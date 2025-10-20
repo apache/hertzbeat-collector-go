@@ -29,6 +29,7 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/microsoft/go-mssqldb"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
 )
@@ -50,10 +51,10 @@ const (
 	PlatformOracle     = "oracle"
 
 	// Response codes
-	CodeSuccess       = 200
-	CodeFail          = 500
-	CodeUnReachable   = 503
-	CodeUnConnectable = 502
+	CodeSuccess       = constants.CollectSuccess
+	CodeFail          = constants.CollectFail
+	CodeUnReachable   = constants.CollectUnReachable
+	CodeUnConnectable = constants.CollectUnConnectable
 )
 
 // JDBCCollector implements JDBC database collection
@@ -178,11 +179,11 @@ func (jc *JDBCCollector) Collect(metrics *jobtypes.Metrics) *jobtypes.CollectRep
 
 	switch jdbcConfig.QueryType {
 	case QueryTypeOneRow:
-		err = jc.queryOneRow(db, jdbcConfig.SQL, metrics.Aliasfields, response)
+		err = jc.queryOneRow(db, jdbcConfig.SQL, metrics.AliasFields, response)
 	case QueryTypeMultiRow:
-		err = jc.queryMultiRow(db, jdbcConfig.SQL, metrics.Aliasfields, response)
+		err = jc.queryMultiRow(db, jdbcConfig.SQL, metrics.AliasFields, response)
 	case QueryTypeColumns:
-		err = jc.queryColumns(db, jdbcConfig.SQL, metrics.Aliasfields, response)
+		err = jc.queryColumns(db, jdbcConfig.SQL, metrics.AliasFields, response)
 	case QueryTypeRunScript:
 		err = jc.runScript(db, jdbcConfig.SQL, response)
 	default:

@@ -42,3 +42,13 @@ const (
 const (
 	CollectorModule = "collector"
 )
+
+// Collect Response status code
+const (
+	CollectSuccess       = 0
+	CollectUnavailable   = 1
+	CollectUnReachable   = 2
+	CollectUnConnectable = 3
+	CollectFail          = 4
+	CollectTimeout       = 5
+)
