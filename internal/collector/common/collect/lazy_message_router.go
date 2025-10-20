@@ -186,12 +186,6 @@ func (l *LazyMessageRouter) createArrowRecordBatch(mem memory.Allocator, data *j
 	// Add dynamic fields (based on collected field definitions)
 	dynamicFields := make([]arrow.Field, 0, len(data.Fields))
 	for _, field := range data.Fields {
-		// Ensure unit is not empty
-		unitValue := field.Unit
-		if unitValue == "" {
-			unitValue = "none"
-		}
-
 		// Create field metadata
 		typeValue := fmt.Sprintf("%d", field.Type)
 		labelValue := fmt.Sprintf("%t", field.Label)
@@ -199,7 +193,7 @@ func (l *LazyMessageRouter) createArrowRecordBatch(mem memory.Allocator, data *j
 		fieldMetadata := arrow.MetadataFrom(map[string]string{
 			"type":  typeValue,
 			"label": labelValue,
-			"unit":  unitValue,
+			"unit":  field.Unit,
 		})
 
 		dynamicFields = append(dynamicFields, arrow.Field{
