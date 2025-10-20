@@ -4,6 +4,7 @@ go 1.24.6
 
 require (
 	github.com/apache/arrow/go/v13 v13.0.0
+	github.com/expr-lang/expr v1.16.9
 	github.com/go-logr/logr v1.4.3
 	github.com/go-logr/zapr v1.3.0
 	github.com/go-sql-driver/mysql v1.9.3

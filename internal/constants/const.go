@@ -19,7 +19,15 @@ package constants
 
 // System constants
 const (
-	KeyWord = "keyword"
+	KeyWord   = "keyword"
+	NullValue = "&nbsp;"
+)
+
+// Field type constants
+const (
+	TypeNumber = 0
+	TypeString = 1
+	TypeTime   = 2
 )
 
 // Service related constants

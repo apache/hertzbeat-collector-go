@@ -38,7 +38,7 @@ const (
 
 	// Special fields
 	ResponseTime = "responseTime"
-	NullValue    = "&nbsp;"
+	NullValue    = consts.NullValue
 
 	// Parse types
 	ParseTypeOneRow   = "oneRow"   // Each line corresponds to one field value, in order of aliasFields
@@ -244,13 +244,12 @@ func (sshc *SSHCollector) createSuccessResponseWithResult(metrics *jobtypes.Metr
 		Metrics:   metrics.Name,
 		Priority:  0,
 		Time:      time.Now().UnixMilli(),
-		// FIXME: use consts.CollectSuccess
-		Code:     200, // Success
-		Msg:      "success",
-		Fields:   make([]jobtypes.Field, 0),
-		Values:   make([]jobtypes.ValueRow, 0),
-		Labels:   make(map[string]string),
-		Metadata: make(map[string]string),
+		Code:      consts.CollectSuccess, // Success
+		Msg:       "success",
+		Fields:    make([]jobtypes.Field, 0),
+		Values:    make([]jobtypes.ValueRow, 0),
+		Labels:    make(map[string]string),
+		Metadata:  make(map[string]string),
 	}
 
 	// Extract SSH configuration to get ParseType
