@@ -188,6 +188,12 @@ func (r *Replacer) replaceMetricsParams(metrics *jobtypes.Metrics, paramMap map[
 	// For now, other protocols (HTTP, SSH, etc.) are concrete struct pointers and
 	// don't require parameter replacement
 
+	if metrics.SSH != nil {
+		if err := r.replaceProtocolParams(&metrics.SSH, paramMap); err != nil {
+			return fmt.Errorf("failed to replace SSH params: %w", err)
+		}
+	}
+
 	// Replace parameters in basic metrics fields
 	if err := r.replaceBasicMetricsParams(metrics, paramMap); err != nil {
 		return fmt.Errorf("failed to replace basic metrics params: %w", err)
@@ -388,4 +394,59 @@ func (r *Replacer) decryptPassword(encryptedPassword string) (string, error) {
 	// If all decryption attempts fail, return original value to allow system to continue
 	log.Info("all decryption attempts failed, using original value")
 	return encryptedPassword, nil
+}
+
+// DoubleAndUnit represents a numeric value with its unit
+type DoubleAndUnit struct {
+	Value float64
+	Unit  string
+}
+
+// Common unit symbols to check for
+// Order matters: longer strings should come before shorter ones to avoid partial matches
+// e.g., "Ki" before "K", "Mi" before "M", "Gi" before "G"
+var unitSymbols = []string{
+	"%", "Gi", "Mi", "Ki", "G", "g", "M", "m", "K", "k", "B", "b",
+}
+
+// ExtractDoubleAndUnitFromStr extracts a double value and unit from a string
+// Examples:
+//   - "123.45" -> {Value: 123.45, Unit: ""}
+//   - "23.43GB" -> {Value: 23.43, Unit: "GB"}
+//   - "33KB" -> {Value: 33, Unit: "KB"}
+//   - "99%" -> {Value: 99, Unit: "%"}
+//   - "MB" -> {Value: 0, Unit: "MB"}
+func (r *Replacer) ExtractDoubleAndUnitFromStr(str string) *DoubleAndUnit {
+	if str == "" {
+		return nil
+	}
+
+	str = strings.TrimSpace(str)
+	doubleAndUnit := &DoubleAndUnit{}
+
+	if value, err := strconv.ParseFloat(str, 64); err == nil {
+		doubleAndUnit.Value = value
+		return doubleAndUnit
+	}
+
+	for _, unitSymbol := range unitSymbols {
+		index := strings.Index(str, unitSymbol)
+
+		if index == 0 {
+			doubleAndUnit.Value = 0
+			doubleAndUnit.Unit = strings.TrimSpace(str)
+			return doubleAndUnit
+		}
+
+		if index > 0 {
+			numericPart := str[:index]
+			if value, err := strconv.ParseFloat(strings.TrimSpace(numericPart), 64); err == nil {
+				doubleAndUnit.Value = value
+				doubleAndUnit.Unit = strings.TrimSpace(str[index:])
+				return doubleAndUnit
+			}
+		}
+	}
+
+	return nil
 }

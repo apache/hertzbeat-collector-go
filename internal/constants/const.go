@@ -19,7 +19,15 @@ package constants
 
 // System constants
 const (
-	KeyWord = "keyword"
+	KeyWord   = "keyword"
+	NullValue = "&nbsp;"
+)
+
+// Field type constants
+const (
+	TypeNumber = 0
+	TypeString = 1
+	TypeTime   = 2
 )
 
 // Service related constants
@@ -41,4 +49,14 @@ const (
 // Function related constants
 const (
 	CollectorModule = "collector"
+)
+
+// Collect Response status code
+const (
+	CollectSuccess       = 0
+	CollectUnavailable   = 1
+	CollectUnReachable   = 2
+	CollectUnConnectable = 3
+	CollectFail          = 4
+	CollectTimeout       = 5
 )

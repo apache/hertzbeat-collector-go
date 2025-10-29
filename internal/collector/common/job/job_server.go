@@ -45,7 +45,8 @@ type TimeDispatcher interface {
 // Config represents job service configuration
 type Config struct {
 	clrserver.Server
-	TimeDispatch TimeDispatcher
+	TimeDispatch  TimeDispatcher
+	MessageRouter collect.MessageRouter // Message router for sending collection results
 }
 
 // Runner implements the service runner interface
@@ -119,8 +120,8 @@ func (r *Runner) RunningJobs() map[int64]*jobtypes.Job {
 
 // New creates a new job service runner with all components initialized
 func New(srv *Config) *Runner {
-	// Create result handler
-	resultHandler := collect.NewResultHandler(srv.Logger)
+	// Create result handler with message router
+	resultHandler := collect.NewResultHandler(srv.Logger, srv.MessageRouter)
 
 	// Create metrics collector
 	metricsCollector := dispatch.NewMetricsCollector(srv.Logger)
