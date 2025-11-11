@@ -47,9 +47,9 @@ func TestCalculateFieldsWithUnitConversion(t *testing.T) {
 				Name:     "memory",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "total", Type: constants.TypeNumber},
-					{Field: "used", Type: constants.TypeNumber},
-					{Field: "free", Type: constants.TypeNumber},
+					{Field: "total", Type: constants.TYPE_NUMBER},
+					{Field: "used", Type: constants.TYPE_NUMBER},
+					{Field: "free", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"total", "used", "free"},
 				Units:       []string{"total=B->MB", "used=B->MB", "free=B->MB"},
@@ -70,8 +70,8 @@ func TestCalculateFieldsWithUnitConversion(t *testing.T) {
 				Name:     "disk",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "size", Type: constants.TypeNumber},
-					{Field: "usage", Type: constants.TypeString},
+					{Field: "size", Type: constants.TYPE_NUMBER},
+					{Field: "usage", Type: constants.TYPE_STRING},
 				},
 				AliasFields: []string{"size", "usage"},
 				Units:       []string{"size=KB->GB"},
@@ -92,7 +92,7 @@ func TestCalculateFieldsWithUnitConversion(t *testing.T) {
 				Name:     "memory",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "committed", Type: constants.TypeNumber},
+					{Field: "committed", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"committed"},
 				Units:       []string{"committed=B->MB"},
@@ -113,8 +113,8 @@ func TestCalculateFieldsWithUnitConversion(t *testing.T) {
 				Name:     "cpu",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "usage", Type: constants.TypeNumber},
-					{Field: "cores", Type: constants.TypeNumber},
+					{Field: "usage", Type: constants.TYPE_NUMBER},
+					{Field: "cores", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"usage", "cores"},
 			},
@@ -181,8 +181,8 @@ func TestCalculateFieldsWithCalculates(t *testing.T) {
 				Name:     "memory",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "total", Type: constants.TypeNumber},
-					{Field: "used", Type: constants.TypeNumber},
+					{Field: "total", Type: constants.TYPE_NUMBER},
+					{Field: "used", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"total_bytes", "used_bytes"},
 				Calculates:  []string{"total=total_bytes", "used=used_bytes"},
@@ -203,9 +203,9 @@ func TestCalculateFieldsWithCalculates(t *testing.T) {
 				Name:     "memory",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "total", Type: constants.TypeNumber},
-					{Field: "used", Type: constants.TypeNumber},
-					{Field: "usage", Type: constants.TypeNumber},
+					{Field: "total", Type: constants.TYPE_NUMBER},
+					{Field: "used", Type: constants.TYPE_NUMBER},
+					{Field: "usage", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"total", "used"},
 				Calculates:  []string{"usage=(used / total) * 100"},
@@ -226,10 +226,10 @@ func TestCalculateFieldsWithCalculates(t *testing.T) {
 				Name:     "disk",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "total", Type: constants.TypeNumber},
-					{Field: "used", Type: constants.TypeNumber},
-					{Field: "free", Type: constants.TypeNumber},
-					{Field: "usage_percent", Type: constants.TypeNumber},
+					{Field: "total", Type: constants.TYPE_NUMBER},
+					{Field: "used", Type: constants.TYPE_NUMBER},
+					{Field: "free", Type: constants.TYPE_NUMBER},
+					{Field: "usage_percent", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"total_space", "used_space", "free_space", "usage"},
 				Calculates: []string{
@@ -255,9 +255,9 @@ func TestCalculateFieldsWithCalculates(t *testing.T) {
 				Name:     "memory",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "total", Type: constants.TypeNumber},
-					{Field: "used", Type: constants.TypeNumber},
-					{Field: "free", Type: constants.TypeNumber},
+					{Field: "total", Type: constants.TYPE_NUMBER},
+					{Field: "used", Type: constants.TYPE_NUMBER},
+					{Field: "free", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"total_mb", "used_mb", "free_mb"},
 				Calculates: []jobtypes.Calculate{
@@ -282,10 +282,10 @@ func TestCalculateFieldsWithCalculates(t *testing.T) {
 				Name:     "jvm",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "heap_max", Type: constants.TypeNumber},
-					{Field: "heap_used", Type: constants.TypeNumber},
-					{Field: "heap_free", Type: constants.TypeNumber},
-					{Field: "heap_usage", Type: constants.TypeNumber},
+					{Field: "heap_max", Type: constants.TYPE_NUMBER},
+					{Field: "heap_used", Type: constants.TYPE_NUMBER},
+					{Field: "heap_free", Type: constants.TYPE_NUMBER},
+					{Field: "heap_usage", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"max", "used", "free", "usage"},
 				Calculates: []jobtypes.Calculate{
@@ -311,8 +311,8 @@ func TestCalculateFieldsWithCalculates(t *testing.T) {
 				Name:     "cpu",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "idle", Type: constants.TypeNumber},
-					{Field: "usage", Type: constants.TypeNumber},
+					{Field: "idle", Type: constants.TYPE_NUMBER},
+					{Field: "usage", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"idle_percent", "usage_percent"},
 				Calculates:  []interface{}{"idle=idle_percent", "usage=usage_percent"},
@@ -333,9 +333,9 @@ func TestCalculateFieldsWithCalculates(t *testing.T) {
 				Name:     "network",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "rx_bytes", Type: constants.TypeNumber},
-					{Field: "tx_bytes", Type: constants.TypeNumber},
-					{Field: "total_bytes", Type: constants.TypeNumber},
+					{Field: "rx_bytes", Type: constants.TYPE_NUMBER},
+					{Field: "tx_bytes", Type: constants.TYPE_NUMBER},
+					{Field: "total_bytes", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"received", "transmitted", "total"},
 				Calculates: []interface{}{
@@ -360,9 +360,9 @@ func TestCalculateFieldsWithCalculates(t *testing.T) {
 				Name:     "system",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "load1", Type: constants.TypeNumber},
-					{Field: "load5", Type: constants.TypeNumber},
-					{Field: "load15", Type: constants.TypeNumber},
+					{Field: "load1", Type: constants.TYPE_NUMBER},
+					{Field: "load5", Type: constants.TYPE_NUMBER},
+					{Field: "load15", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"load_1min", "load_5min", "load_15min"},
 				Calculates: []interface{}{
@@ -387,9 +387,9 @@ func TestCalculateFieldsWithCalculates(t *testing.T) {
 				Name:     "database",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "connections", Type: constants.TypeNumber},
-					{Field: "max_connections", Type: constants.TypeNumber},
-					{Field: "usage_rate", Type: constants.TypeNumber},
+					{Field: "connections", Type: constants.TYPE_NUMBER},
+					{Field: "max_connections", Type: constants.TYPE_NUMBER},
+					{Field: "usage_rate", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"active", "max"},
 				Calculates: []interface{}{
@@ -414,9 +414,9 @@ func TestCalculateFieldsWithCalculates(t *testing.T) {
 				Name:     "storage",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "total", Type: constants.TypeNumber},
-					{Field: "used", Type: constants.TypeNumber},
-					{Field: "available", Type: constants.TypeNumber},
+					{Field: "total", Type: constants.TYPE_NUMBER},
+					{Field: "used", Type: constants.TYPE_NUMBER},
+					{Field: "available", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"capacity", "occupied", "free_space"},
 				Calculates: []interface{}{
@@ -441,7 +441,7 @@ func TestCalculateFieldsWithCalculates(t *testing.T) {
 				Name:     "simple",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "value", Type: constants.TypeNumber},
+					{Field: "value", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"value"},
 			},
@@ -614,9 +614,9 @@ func TestCalculateFieldsWithUnitStructFormat(t *testing.T) {
 				Name:     "memory",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "total", Type: constants.TypeNumber},
-					{Field: "used", Type: constants.TypeNumber},
-					{Field: "free", Type: constants.TypeNumber},
+					{Field: "total", Type: constants.TYPE_NUMBER},
+					{Field: "used", Type: constants.TYPE_NUMBER},
+					{Field: "free", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"total", "used", "free"},
 				Units: []jobtypes.Unit{
@@ -641,9 +641,9 @@ func TestCalculateFieldsWithUnitStructFormat(t *testing.T) {
 				Name:     "storage",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "disk_total", Type: constants.TypeNumber},
-					{Field: "disk_used", Type: constants.TypeNumber},
-					{Field: "disk_free", Type: constants.TypeNumber},
+					{Field: "disk_total", Type: constants.TYPE_NUMBER},
+					{Field: "disk_used", Type: constants.TYPE_NUMBER},
+					{Field: "disk_free", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"disk_total", "disk_used", "disk_free"},
 				Units: []interface{}{
@@ -668,9 +668,9 @@ func TestCalculateFieldsWithUnitStructFormat(t *testing.T) {
 				Name:     "jvm",
 				Priority: 0,
 				Fields: []jobtypes.Field{
-					{Field: "heap_max", Type: constants.TypeNumber},
-					{Field: "heap_used", Type: constants.TypeNumber},
-					{Field: "heap_usage", Type: constants.TypeNumber},
+					{Field: "heap_max", Type: constants.TYPE_NUMBER},
+					{Field: "heap_used", Type: constants.TYPE_NUMBER},
+					{Field: "heap_usage", Type: constants.TYPE_NUMBER},
 				},
 				AliasFields: []string{"max_bytes", "used_bytes"},
 				Calculates:  []string{"heap_max=max_bytes", "heap_used=used_bytes", "heap_usage=(heap_used / heap_max) * 100"},
