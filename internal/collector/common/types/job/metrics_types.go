@@ -205,18 +205,18 @@ type SSHProtocol struct {
 
 // JDBCProtocol represents JDBC protocol configuration
 type JDBCProtocol struct {
-	Host            string                 `json:"host"`
-	Port            string                 `json:"port"`
-	Platform        string                 `json:"platform"`
-	Username        string                 `json:"username"`
-	Password        string                 `json:"password"`
-	Database        string                 `json:"database"`
-	Timeout         string                 `json:"timeout"`
-	QueryType       string                 `json:"queryType"`
-	SQL             string                 `json:"sql"`
-	URL             string                 `json:"url"`
-	ReuseConnection string                 `json:"reuseConnection"`
-	SSHTunnel       map[string]interface{} `json:"sshTunnel,omitempty"`
+	Host            string     `json:"host"`
+	Port            string     `json:"port"`
+	Platform        string     `json:"platform"`
+	Username        string     `json:"username"`
+	Password        string     `json:"password"`
+	Database        string     `json:"database"`
+	Timeout         string     `json:"timeout"`
+	QueryType       string     `json:"queryType"`
+	SQL             string     `json:"sql"`
+	URL             string     `json:"url"`
+	ReuseConnection string     `json:"reuseConnection"`
+	SSHTunnel       *SSHTunnel `json:"sshTunnel,omitempty"`
 }
 
 // SNMPProtocol represents SNMP protocol configuration
