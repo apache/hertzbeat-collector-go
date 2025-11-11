@@ -38,7 +38,7 @@ const (
 
 	// Special fields
 	ResponseTime = "responseTime"
-	NullValue    = consts.NullValue
+	NullValue    = consts.NULL_VALUE
 
 	// Parse types
 	ParseTypeOneRow   = "oneRow"   // Each line corresponds to one field value, in order of aliasFields

@@ -85,7 +85,7 @@ func (mc *MetricsCollector) CalculateFields(metrics *jobtypes.Metrics, result *j
 				break
 			}
 			aliasFieldValue := aliasRow.Columns[aliasIndex]
-			if aliasFieldValue == constants.NullValue {
+			if aliasFieldValue == constants.NULL_VALUE {
 				fieldValueMap[aliasField] = nil
 				stringTypeFieldValueMap[aliasField] = nil
 				continue
@@ -115,7 +115,7 @@ func (mc *MetricsCollector) CalculateFields(metrics *jobtypes.Metrics, result *j
 
 			if program, exists := fieldExpressionMap[realField]; exists {
 				var context map[string]interface{}
-				if field.Type == constants.TypeString {
+				if field.Type == constants.TYPE_STRING {
 					context = stringTypeFieldValueMap
 				} else {
 					context = fieldValueMap
@@ -146,9 +146,9 @@ func (mc *MetricsCollector) CalculateFields(metrics *jobtypes.Metrics, result *j
 			}
 
 			// Process based on field type if value exists
-			if value != "" && value != constants.NullValue {
+			if value != "" && value != constants.NULL_VALUE {
 				switch field.Type {
-				case constants.TypeNumber:
+				case constants.TYPE_NUMBER:
 					// Extract numeric value and format
 					doubleAndUnit := replacer.ExtractDoubleAndUnitFromStr(value)
 					if doubleAndUnit != nil {
@@ -180,24 +180,24 @@ func (mc *MetricsCollector) CalculateFields(metrics *jobtypes.Metrics, result *j
 						}
 						value = formatNumber(numericValue)
 					} else {
-						value = constants.NullValue
+						value = constants.NULL_VALUE
 					}
 
-				case constants.TypeTime:
+				case constants.TYPE_TIME:
 					// TODO: Implement time parsing
 					// For now, keep original value
 				}
 			}
 
 			if value == "" {
-				value = constants.NullValue
+				value = constants.NULL_VALUE
 			}
 
 			realValueRow.Columns = append(realValueRow.Columns, value)
 
 			// Add the calculated field value to context maps for use in subsequent expressions
 			// This allows later expressions to reference earlier calculated fields
-			if value != constants.NullValue {
+			if value != constants.NULL_VALUE {
 				doubleAndUnit := replacer.ExtractDoubleAndUnitFromStr(value)
 				if doubleAndUnit != nil {
 					fieldValueMap[realField] = doubleAndUnit.Value
