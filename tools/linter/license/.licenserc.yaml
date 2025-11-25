@@ -59,6 +59,7 @@ header:
     - 'tools/linter/yamllint/.yamllint'
     - '.go-version'
     - 'VERSION'
+    - '.editorconfig'
 
   comment: on-failure
 
