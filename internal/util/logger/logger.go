@@ -18,64 +18,65 @@
 package logger
 
 import (
-	"io"
-	"os"
+  "io"
+  "os"
 
-	"github.com/go-logr/logr"
-	"github.com/go-logr/zapr"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+  "github.com/go-logr/logr"
+  "github.com/go-logr/zapr"
+  "go.uber.org/zap"
+  "go.uber.org/zap/zapcore"
+
+  "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
 )
 
 type Logger struct {
-	logr.Logger
-	out           io.Writer
-	logging       *logger.HertzBeatLogging
-	sugaredLogger *zap.SugaredLogger
+  logr.Logger
+  out           io.Writer
+  logging       *logger.HertzBeatLogging
+  sugaredLogger *zap.SugaredLogger
 }
 
 func NewLogger(w io.Writer, logging *logger.HertzBeatLogging) Logger {
 
-	logger := initZapLogger(w, logging, logging.Level[logger.LogComponentHertzbeatDefault])
+  logger := initZapLogger(w, logging, logging.Level[logger.LogComponentHertzbeatDefault])
 
-	return Logger{
-		Logger:        zapr.NewLogger(logger),
-		out:           w,
-		logging:       logging,
-		sugaredLogger: logger.Sugar(),
-	}
+  return Logger{
+    Logger:        zapr.NewLogger(logger),
+    out:           w,
+    logging:       logging,
+    sugaredLogger: logger.Sugar(),
+  }
 }
 
 func FileLogger(file, name string, level logger.LogLevel) Logger {
 
-	writer, err := os.OpenFile(file, os.O_WRONLY, 0o666)
-	if err != nil {
-		panic(err)
-	}
+  writer, err := os.OpenFile(file, os.O_WRONLY, 0o666)
+  if err != nil {
+    panic(err)
+  }
 
-	logging := logger.DefaultHertzbeatLogging()
-	logger := initZapLogger(writer, logging, level)
+  logging := logger.DefaultHertzbeatLogging()
+  logger := initZapLogger(writer, logging, level)
 
-	return Logger{
-		Logger:        zapr.NewLogger(logger).WithName(name),
-		logging:       logging,
-		out:           writer,
-		sugaredLogger: logger.Sugar(),
-	}
+  return Logger{
+    Logger:        zapr.NewLogger(logger).WithName(name),
+    logging:       logging,
+    out:           writer,
+    sugaredLogger: logger.Sugar(),
+  }
 }
 
 func DefaultLogger(out io.Writer, level logger.LogLevel) Logger {
 
-	logging := logger.DefaultHertzbeatLogging()
-	logger := initZapLogger(out, logging, level)
+  logging := logger.DefaultHertzbeatLogging()
+  logger := initZapLogger(out, logging, level)
 
-	return Logger{
-		Logger:        zapr.NewLogger(logger),
-		out:           out,
-		logging:       logging,
-		sugaredLogger: logger.Sugar(),
-	}
+  return Logger{
+    Logger:        zapr.NewLogger(logger),
+    out:           out,
+    logging:       logging,
+    sugaredLogger: logger.Sugar(),
+  }
 }
 
 // WithName returns a new Logger instance with the specified name element added
@@ -85,23 +86,23 @@ func DefaultLogger(out io.Writer, level logger.LogLevel) Logger {
 // more information).
 func (l Logger) WithName(name string) Logger {
 
-	logLevel := l.logging.Level[logger.HertzbeatLogComponent(name)]
-	logger := initZapLogger(l.out, l.logging, logLevel)
+  logLevel := l.logging.Level[logger.HertzbeatLogComponent(name)]
+  logger := initZapLogger(l.out, l.logging, logLevel)
 
-	return Logger{
-		Logger:        zapr.NewLogger(logger).WithName(name),
-		logging:       l.logging,
-		out:           l.out,
-		sugaredLogger: logger.Sugar().Named(name),
-	}
+  return Logger{
+    Logger:        zapr.NewLogger(logger).WithName(name),
+    logging:       l.logging,
+    out:           l.out,
+    sugaredLogger: logger.Sugar().Named(name),
+  }
 }
 
 // WithValues returns a new Logger instance with additional key/value pairs.
 // See Info for documentation on how key/value pairs work.
 func (l Logger) WithValues(keysAndValues ...interface{}) Logger {
 
-	l.Logger = l.Logger.WithValues(keysAndValues...)
-	return l
+  l.Logger = l.Logger.WithValues(keysAndValues...)
+  return l
 }
 
 // A Sugar wraps the base Logger functionality in a slower, but less
@@ -124,13 +125,13 @@ func (l Logger) WithValues(keysAndValues ...interface{}) Logger {
 //	Infoln(...any)         Println-style logger
 func (l Logger) Sugar() *zap.SugaredLogger {
 
-	return l.sugaredLogger
+  return l.sugaredLogger
 }
 
 func initZapLogger(w io.Writer, logging *logger.HertzBeatLogging, level logger.LogLevel) *zap.Logger {
 
-	parseLevel, _ := zapcore.ParseLevel(string(logging.DefaultHertzBeatLoggingLevel(level)))
-	core := zapcore.NewCore(zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()), zapcore.AddSync(w), zap.NewAtomicLevelAt(parseLevel))
+  parseLevel, _ := zapcore.ParseLevel(string(logging.DefaultHertzBeatLoggingLevel(level)))
+  core := zapcore.NewCore(zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()), zapcore.AddSync(w), zap.NewAtomicLevelAt(parseLevel))
 
-	return zap.New(core, zap.AddCaller())
+  return zap.New(core, zap.AddCaller())
 }

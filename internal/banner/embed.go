@@ -19,12 +19,21 @@ package banner
 
 import (
 	"embed"
+	"fmt"
 	"os"
 	"strconv"
 	"text/template"
 
 	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
 	bannertypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/err"
+)
+
+const (
+	// ANSI color codes
+	ColorReset  = "\033[0m"
+	ColorPurple = "\033[35m"
+	ColorGreen  = "\033[32m"
+	ColorYellow = "\033[33m"
 )
 
 //go:embed banner.txt
@@ -74,7 +83,11 @@ func (r *Runner) PrintBanner(appName, port string) error {
 		Pid:           strconv.Itoa(os.Getpid()),
 	}
 
+	// Print banner with color
+	fmt.Print(ColorPurple)
 	err = tmpl.Execute(os.Stdout, vars)
+	fmt.Print(ColorReset)
+
 	if err != nil {
 		r.Logger.Error(bannertypes.BannerPrintExecuteError, "template parse error", "error", err)
 		return err

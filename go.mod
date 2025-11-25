@@ -11,6 +11,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.9.3
 	github.com/prometheus/client_golang v1.23.0
+	github.com/sijms/go-ora/v2 v2.9.0
 	github.com/spf13/cobra v1.10.1
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/zap v1.27.0
