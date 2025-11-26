@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -86,7 +86,7 @@ func (r *Replacer) ReplaceJobParams(job *jobtypes.Job) (*jobtypes.Job, error) {
 
 	// Replace parameters in all metrics
 	for i := range clonedJob.Metrics {
-		if err := r.replaceMetricsParams(&clonedJob.Metrics[i], paramMap); err != nil {
+		if err := r.ReplaceMetricsParams(&clonedJob.Metrics[i], paramMap); err != nil {
 			return nil, fmt.Errorf("failed to replace params in metrics %s: %w", clonedJob.Metrics[i].Name, err)
 		}
 	}
@@ -126,72 +126,26 @@ func (r *Replacer) createParamMapSimple(configmap []jobtypes.Configmap) map[stri
 	return paramMap
 }
 
-// createParamMap creates a parameter map from configmap entries (legacy version with decryption)
-// Deprecated: Use PreprocessJobPasswords + createParamMapSafe instead
-func (r *Replacer) createParamMap(configmap []jobtypes.Configmap) map[string]string {
-	paramMap := make(map[string]string)
-
-	for _, config := range configmap {
-		// Convert value to string based on type, handle null values as empty strings
-		var strValue string
-		if config.Value == nil {
-			strValue = "" // null values become empty strings
-		} else {
-			switch config.Type {
-			case 0: // number
-				if numVal, ok := config.Value.(float64); ok {
-					strValue = strconv.FormatFloat(numVal, 'f', -1, 64)
-				} else if intVal, ok := config.Value.(int); ok {
-					strValue = strconv.Itoa(intVal)
-				} else {
-					strValue = fmt.Sprintf("%v", config.Value)
-				}
-			case 1: // string
-				strValue = fmt.Sprintf("%v", config.Value)
-			case 2: // password (encrypted)
-				if encryptedValue, ok := config.Value.(string); ok {
-					log := logger.DefaultLogger(os.Stdout, loggertype.LogLevelDebug).WithName("param-replacer")
-					log.Sugar().Debugf("attempting to decrypt password: %s", encryptedValue)
-					if decoded, err := r.decryptPassword(encryptedValue); err == nil {
-						log.Info("password decryption successful", "length", len(decoded))
-						strValue = decoded
-					} else {
-						log.Error(err, "password decryption failed, using original value")
-						// Fallback to original value if decryption fails
-						strValue = encryptedValue
-					}
-				} else {
-					strValue = fmt.Sprintf("%v", config.Value)
-				}
-			default:
-				strValue = fmt.Sprintf("%v", config.Value)
-			}
-		}
-		paramMap[config.Key] = strValue
-	}
-
-	return paramMap
-}
-
-// replaceMetricsParams replaces parameters in metrics configuration
-func (r *Replacer) replaceMetricsParams(metrics *jobtypes.Metrics, paramMap map[string]string) error {
-	// Replace parameters in protocol-specific configurations
-	// Currently only JDBC is defined as interface{} in the struct definition
-	// Other protocols are concrete struct pointers and don't contain placeholders from JSON
+// ReplaceMetricsParams replaces parameters in metrics configuration
+// Exported method to be called by MetricsCollector
+func (r *Replacer) ReplaceMetricsParams(metrics *jobtypes.Metrics, paramMap map[string]string) error {
+	// 1. JDBC
 	if metrics.JDBC != nil {
 		if err := r.replaceProtocolParams(&metrics.JDBC, paramMap); err != nil {
 			return fmt.Errorf("failed to replace JDBC params: %w", err)
 		}
 	}
 
-	// TODO: Add other protocol configurations as they are converted to interface{} types
-	// For now, other protocols (HTTP, SSH, etc.) are concrete struct pointers and
-	// don't require parameter replacement
-
+	// 2. SSH
 	if metrics.SSH != nil {
 		if err := r.replaceProtocolParams(&metrics.SSH, paramMap); err != nil {
 			return fmt.Errorf("failed to replace SSH params: %w", err)
 		}
+	}
+
+	// 3. HTTP
+	if metrics.HTTP != nil {
+		r.replaceHTTPParams(metrics.HTTP, paramMap)
 	}
 
 	// Replace parameters in basic metrics fields
@@ -202,7 +156,55 @@ func (r *Replacer) replaceMetricsParams(metrics *jobtypes.Metrics, paramMap map[
 	return nil
 }
 
-// replaceProtocolParams replaces parameters in any protocol configuration
+// replaceHTTPParams specific replacement logic for HTTPProtocol struct
+func (r *Replacer) replaceHTTPParams(http *jobtypes.HTTPProtocol, paramMap map[string]string) {
+	http.URL = r.replaceParamPlaceholders(http.URL, paramMap)
+	http.Method = r.replaceParamPlaceholders(http.Method, paramMap)
+	http.Body = r.replaceParamPlaceholders(http.Body, paramMap)
+	http.ParseScript = r.replaceParamPlaceholders(http.ParseScript, paramMap)
+	http.ParseType = r.replaceParamPlaceholders(http.ParseType, paramMap)
+	http.Keyword = r.replaceParamPlaceholders(http.Keyword, paramMap)
+	http.Timeout = r.replaceParamPlaceholders(http.Timeout, paramMap)
+	http.SSL = r.replaceParamPlaceholders(http.SSL, paramMap)
+
+	// Headers
+	if http.Headers != nil {
+		newHeaders := make(map[string]string)
+		for k, v := range http.Headers {
+			newKey := r.replaceParamPlaceholders(k, paramMap)
+			// Filter out keys that are empty or still contain placeholders
+			if newKey != "" && !strings.Contains(newKey, "^_^") {
+				newHeaders[newKey] = r.replaceParamPlaceholders(v, paramMap)
+			}
+		}
+		http.Headers = newHeaders
+	}
+
+	// Params
+	if http.Params != nil {
+		newParams := make(map[string]string)
+		for k, v := range http.Params {
+			newKey := r.replaceParamPlaceholders(k, paramMap)
+			if newKey != "" && !strings.Contains(newKey, "^_^") {
+				newParams[newKey] = r.replaceParamPlaceholders(v, paramMap)
+			}
+		}
+		http.Params = newParams
+	}
+
+	// Authorization
+	if http.Authorization != nil {
+		auth := http.Authorization
+		auth.Type = r.replaceParamPlaceholders(auth.Type, paramMap)
+		auth.BasicAuthUsername = r.replaceParamPlaceholders(auth.BasicAuthUsername, paramMap)
+		auth.BasicAuthPassword = r.replaceParamPlaceholders(auth.BasicAuthPassword, paramMap)
+		auth.DigestAuthUsername = r.replaceParamPlaceholders(auth.DigestAuthUsername, paramMap)
+		auth.DigestAuthPassword = r.replaceParamPlaceholders(auth.DigestAuthPassword, paramMap)
+		auth.BearerTokenToken = r.replaceParamPlaceholders(auth.BearerTokenToken, paramMap)
+	}
+}
+
+// replaceProtocolParams replaces parameters in any protocol configuration defined as interface{}
 func (r *Replacer) replaceProtocolParams(protocolInterface *interface{}, paramMap map[string]string) error {
 	if *protocolInterface == nil {
 		return nil
@@ -211,11 +213,9 @@ func (r *Replacer) replaceProtocolParams(protocolInterface *interface{}, paramMa
 	// Convert protocol interface{} to map for manipulation
 	protocolMap, ok := (*protocolInterface).(map[string]interface{})
 	if !ok {
-		// If it's already processed or not a map, skip
 		return nil
 	}
 
-	// Recursively replace parameters in all string values
 	return r.replaceParamsInMap(protocolMap, paramMap)
 }
 
@@ -224,15 +224,12 @@ func (r *Replacer) replaceParamsInMap(data map[string]interface{}, paramMap map[
 	for key, value := range data {
 		switch v := value.(type) {
 		case string:
-			// Replace parameters in string values
 			data[key] = r.replaceParamPlaceholders(v, paramMap)
 		case map[string]interface{}:
-			// Recursively handle nested maps
 			if err := r.replaceParamsInMap(v, paramMap); err != nil {
 				return fmt.Errorf("failed to replace params in nested map %s: %w", key, err)
 			}
 		case []interface{}:
-			// Handle arrays
 			for i, item := range v {
 				if itemMap, ok := item.(map[string]interface{}); ok {
 					if err := r.replaceParamsInMap(itemMap, paramMap); err != nil {
@@ -249,41 +246,35 @@ func (r *Replacer) replaceParamsInMap(data map[string]interface{}, paramMap map[
 
 // replaceBasicMetricsParams replaces parameters in basic metrics fields
 func (r *Replacer) replaceBasicMetricsParams(metrics *jobtypes.Metrics, paramMap map[string]string) error {
-	// Replace parameters in basic string fields
 	metrics.Host = r.replaceParamPlaceholders(metrics.Host, paramMap)
 	metrics.Port = r.replaceParamPlaceholders(metrics.Port, paramMap)
 	metrics.Timeout = r.replaceParamPlaceholders(metrics.Timeout, paramMap)
 	metrics.Range = r.replaceParamPlaceholders(metrics.Range, paramMap)
 
-	// Replace parameters in ConfigMap
 	if metrics.ConfigMap != nil {
 		for key, value := range metrics.ConfigMap {
 			metrics.ConfigMap[key] = r.replaceParamPlaceholders(value, paramMap)
 		}
 	}
-
 	return nil
 }
 
 // replaceParamPlaceholders replaces ^_^paramName^_^ placeholders with actual values
 func (r *Replacer) replaceParamPlaceholders(template string, paramMap map[string]string) string {
-	// Guard against empty templates to prevent strings.ReplaceAll issues
 	if template == "" {
 		return ""
 	}
-
+	if !strings.Contains(template, "^_^") {
+		return template
+	}
 	result := template
-
-	// Find all ^_^paramName^_^ patterns and replace them
 	for paramName, paramValue := range paramMap {
-		// Guard against empty parameter names
 		if paramName == "" {
 			continue
 		}
 		placeholder := fmt.Sprintf("^_^%s^_^", paramName)
 		result = strings.ReplaceAll(result, placeholder, paramValue)
 	}
-
 	return result
 }
 
@@ -293,9 +284,7 @@ func (r *Replacer) ExtractProtocolConfig(protocolInterface interface{}, targetSt
 		return fmt.Errorf("protocol interface is nil")
 	}
 
-	// If it's a map (from JSON parsing), convert to target struct
 	if protocolMap, ok := protocolInterface.(map[string]interface{}); ok {
-		// Convert map to JSON and then unmarshal to target struct
 		jsonData, err := json.Marshal(protocolMap)
 		if err != nil {
 			return fmt.Errorf("failed to marshal protocol config: %w", err)
@@ -311,87 +300,65 @@ func (r *Replacer) ExtractProtocolConfig(protocolInterface interface{}, targetSt
 	return fmt.Errorf("unsupported protocol config type: %T", protocolInterface)
 }
 
-// ExtractJDBCConfig extracts and processes JDBC configuration after parameter replacement
+// ExtractJDBCConfig extracts and processes JDBC configuration
 func (r *Replacer) ExtractJDBCConfig(jdbcInterface interface{}) (*jobtypes.JDBCProtocol, error) {
 	if jdbcInterface == nil {
 		return nil, nil
 	}
-
-	// If it's already a JDBCProtocol struct
 	if jdbcConfig, ok := jdbcInterface.(*jobtypes.JDBCProtocol); ok {
 		return jdbcConfig, nil
 	}
-
-	// Use the generic extraction method
 	var jdbcConfig jobtypes.JDBCProtocol
 	if err := r.ExtractProtocolConfig(jdbcInterface, &jdbcConfig); err != nil {
 		return nil, fmt.Errorf("failed to extract JDBC config: %w", err)
 	}
-
 	return &jdbcConfig, nil
 }
 
-// ExtractHTTPConfig extracts and processes HTTP configuration after parameter replacement
+// ExtractHTTPConfig extracts and processes HTTP configuration
 func (r *Replacer) ExtractHTTPConfig(httpInterface interface{}) (*jobtypes.HTTPProtocol, error) {
 	if httpInterface == nil {
 		return nil, nil
 	}
-
-	// If it's already an HTTPProtocol struct
 	if httpConfig, ok := httpInterface.(*jobtypes.HTTPProtocol); ok {
 		return httpConfig, nil
 	}
-
-	// Use the generic extraction method
 	var httpConfig jobtypes.HTTPProtocol
 	if err := r.ExtractProtocolConfig(httpInterface, &httpConfig); err != nil {
 		return nil, fmt.Errorf("failed to extract HTTP config: %w", err)
 	}
-
 	return &httpConfig, nil
 }
 
-// ExtractSSHConfig extracts and processes SSH configuration after parameter replacement
+// ExtractSSHConfig extracts and processes SSH configuration
 func (r *Replacer) ExtractSSHConfig(sshInterface interface{}) (*jobtypes.SSHProtocol, error) {
 	if sshInterface == nil {
 		return nil, nil
 	}
-
-	// If it's already an SSHProtocol struct
 	if sshConfig, ok := sshInterface.(*jobtypes.SSHProtocol); ok {
 		return sshConfig, nil
 	}
-
-	// Use the generic extraction method
 	var sshConfig jobtypes.SSHProtocol
 	if err := r.ExtractProtocolConfig(sshInterface, &sshConfig); err != nil {
 		return nil, fmt.Errorf("failed to extract SSH config: %w", err)
 	}
-
 	return &sshConfig, nil
 }
 
 // decryptPassword decrypts an encrypted password using AES
-// This implements the same algorithm as Java manager's AESUtil
 func (r *Replacer) decryptPassword(encryptedPassword string) (string, error) {
 	log := logger.DefaultLogger(os.Stdout, loggertype.LogLevelDebug).WithName("password-decrypt")
-
-	// Use the AES utility (matches Java: AesUtil.aesDecode)
 	if result, err := crypto.AesDecode(encryptedPassword); err == nil {
 		log.Info("password decrypted successfully", "length", len(result))
 		return result, nil
 	} else {
 		log.Sugar().Debugf("primary decryption failed: %v", err)
 	}
-
-	// Fallback: try with default Java key if no manager key is set
 	defaultKey := "tomSun28HaHaHaHa"
 	if result, err := crypto.AesDecodeWithKey(encryptedPassword, defaultKey); err == nil {
 		log.Info("password decrypted with default key", "length", len(result))
 		return result, nil
 	}
-
-	// If all decryption attempts fail, return original value to allow system to continue
 	log.Info("all decryption attempts failed, using original value")
 	return encryptedPassword, nil
 }
@@ -402,42 +369,28 @@ type DoubleAndUnit struct {
 	Unit  string
 }
 
-// Common unit symbols to check for
-// Order matters: longer strings should come before shorter ones to avoid partial matches
-// e.g., "Ki" before "K", "Mi" before "M", "Gi" before "G"
 var unitSymbols = []string{
 	"%", "Gi", "Mi", "Ki", "G", "g", "M", "m", "K", "k", "B", "b",
 }
 
 // ExtractDoubleAndUnitFromStr extracts a double value and unit from a string
-// Examples:
-//   - "123.45" -> {Value: 123.45, Unit: ""}
-//   - "23.43GB" -> {Value: 23.43, Unit: "GB"}
-//   - "33KB" -> {Value: 33, Unit: "KB"}
-//   - "99%" -> {Value: 99, Unit: "%"}
-//   - "MB" -> {Value: 0, Unit: "MB"}
 func (r *Replacer) ExtractDoubleAndUnitFromStr(str string) *DoubleAndUnit {
 	if str == "" {
 		return nil
 	}
-
 	str = strings.TrimSpace(str)
 	doubleAndUnit := &DoubleAndUnit{}
-
 	if value, err := strconv.ParseFloat(str, 64); err == nil {
 		doubleAndUnit.Value = value
 		return doubleAndUnit
 	}
-
 	for _, unitSymbol := range unitSymbols {
 		index := strings.Index(str, unitSymbol)
-
 		if index == 0 {
 			doubleAndUnit.Value = 0
 			doubleAndUnit.Unit = strings.TrimSpace(str)
 			return doubleAndUnit
 		}
-
 		if index > 0 {
 			numericPart := str[:index]
 			if value, err := strconv.ParseFloat(strings.TrimSpace(numericPart), 64); err == nil {
@@ -447,6 +400,5 @@ func (r *Replacer) ExtractDoubleAndUnitFromStr(str string) *DoubleAndUnit {
 			}
 		}
 	}
-
 	return nil
 }

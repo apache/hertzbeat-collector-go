@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -169,17 +169,27 @@ type ValueRow struct {
 
 // HTTPProtocol represents HTTP protocol configuration
 type HTTPProtocol struct {
-	URL         string            `json:"url"`
-	Method      string            `json:"method"`
-	Headers     map[string]string `json:"headers"`
-	Params      map[string]string `json:"params"`
-	Body        string            `json:"body"`
-	ParseScript string            `json:"parseScript"`
-	ParseType   string            `json:"parseType"`
-	Keyword     string            `json:"keyword"`
-	Username    string            `json:"username"`
-	Password    string            `json:"password"`
-	SSL         bool              `json:"ssl"`
+	URL           string            `json:"url"`
+	Method        string            `json:"method"`
+	Headers       map[string]string `json:"headers"`
+	Params        map[string]string `json:"params"`
+	Body          string            `json:"body"`
+	ParseScript   string            `json:"parseScript"`
+	ParseType     string            `json:"parseType"`
+	Keyword       string            `json:"keyword"`
+	Timeout       string            `json:"timeout"`
+	SSL           string            `json:"ssl"`
+	Authorization *Authorization    `json:"authorization"`
+}
+
+// Authorization represents HTTP authorization configuration
+type Authorization struct {
+	Type               string `json:"type"`
+	BasicAuthUsername  string `json:"basicAuthUsername"`
+	BasicAuthPassword  string `json:"basicAuthPassword"`
+	DigestAuthUsername string `json:"digestAuthUsername"`
+	DigestAuthPassword string `json:"digestAuthPassword"`
+	BearerTokenToken   string `json:"bearerTokenToken"`
 }
 
 // SSHProtocol represents SSH protocol configuration
@@ -340,6 +350,28 @@ func (j *Job) Clone() *Job {
 			if metric.AliasFields != nil {
 				clone.Metrics[i].AliasFields = make([]string, len(metric.AliasFields))
 				copy(clone.Metrics[i].AliasFields, metric.AliasFields)
+			}
+
+			// Deep copy HTTP Protocol if exists
+			if metric.HTTP != nil {
+				cloneHTTP := *metric.HTTP
+				if metric.HTTP.Headers != nil {
+					cloneHTTP.Headers = make(map[string]string, len(metric.HTTP.Headers))
+					for k, v := range metric.HTTP.Headers {
+						cloneHTTP.Headers[k] = v
+					}
+				}
+				if metric.HTTP.Params != nil {
+					cloneHTTP.Params = make(map[string]string, len(metric.HTTP.Params))
+					for k, v := range metric.HTTP.Params {
+						cloneHTTP.Params[k] = v
+					}
+				}
+				if metric.HTTP.Authorization != nil {
+					cloneAuth := *metric.HTTP.Authorization
+					cloneHTTP.Authorization = &cloneAuth
+				}
+				clone.Metrics[i].HTTP = &cloneHTTP
 			}
 		}
 	}
