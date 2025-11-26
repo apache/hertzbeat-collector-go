@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -218,12 +218,6 @@ func (mc *MetricsCollector) CalculateFields(metrics *jobtypes.Metrics, result *j
 }
 
 // parseCalculates parses the calculates configuration and compiles expressions
-// Returns a map of field name to compiled expression program, and a map of field name to alias field
-// Supports two formats:
-//  1. String array format: []string - "field=expression" or "field=aliasField"
-//     Example: "usage=(used / total) * 100" or "total=total"
-//  2. Calculate struct array format: []Calculate - {field: "field", script: "expression", aliasField: "alias"}
-//  3. Mixed interface array: []interface{} - can contain both strings and Calculate structs
 func (mc *MetricsCollector) parseCalculates(calculates interface{}) (map[string]*vm.Program, map[string]string) {
 	fieldExpressionMap := make(map[string]*vm.Program)
 	fieldAliasMap := make(map[string]string)
@@ -313,11 +307,6 @@ func (mc *MetricsCollector) parseCalculates(calculates interface{}) (map[string]
 }
 
 // parseUnits parses the units configuration for unit conversions
-// Supports three formats:
-//  1. String array format: []string - "fieldName=originUnit->newUnit"
-//     Example: "committed=B->MB"
-//  2. Unit struct array format: []Unit - {field: "field", unit: "originUnit->newUnit"}
-//  3. Mixed interface array: []interface{} - can contain both strings and Unit structs
 func (mc *MetricsCollector) parseUnits(units interface{}) map[string]*unit.Conversion {
 	fieldUnitConversionMap := make(map[string]*unit.Conversion)
 
@@ -390,8 +379,6 @@ func (mc *MetricsCollector) parseUnits(units interface{}) map[string]*unit.Conve
 }
 
 // parseUnitsFromStringArray parses units from string array format
-// Format: "fieldName=originUnit->newUnit"
-// Example: "committed=B->MB"
 func (mc *MetricsCollector) parseUnitsFromStringArray(units []string, fieldUnitConversionMap map[string]*unit.Conversion) {
 	for _, unitStr := range units {
 		conversion, err := unit.ParseConversion(unitStr)
@@ -426,10 +413,6 @@ func (mc *MetricsCollector) parseUnitsFromStructArray(units []jobtypes.Unit, fie
 }
 
 // parseCalculatesFromStringArray parses calculates from string array format
-// Format: "field=expression" where expression can be a simple field name or a calculation
-// Examples:
-//   - "total=total" (simple field mapping)
-//   - "usage=(used / total) * 100" (expression calculation)
 func (mc *MetricsCollector) parseCalculatesFromStringArray(calculates []string,
 	fieldExpressionMap map[string]*vm.Program, fieldAliasMap map[string]string) {
 
@@ -484,7 +467,6 @@ func (mc *MetricsCollector) parseCalculatesFromStructArray(calculates []jobtypes
 }
 
 // splitCalculateString splits "field=expression" into [field, expression]
-// Simply splits by the first '=' character
 func splitCalculateString(calc string) []string {
 	idx := strings.Index(calc, "=")
 	if idx == -1 {
@@ -538,6 +520,33 @@ func (mc *MetricsCollector) CollectMetrics(metrics *jobtypes.Metrics, job *jobty
 
 		startTime := time.Now()
 
+		// Populate metrics.ConfigMap from job.Configmap if missing
+		if metrics.ConfigMap == nil {
+			metrics.ConfigMap = make(map[string]string)
+		}
+		// Merge global job config params into metrics config map
+		if job.Configmap != nil {
+			for _, param := range job.Configmap {
+				// Fix: Handle nil value gracefully to avoid "<nil>" literal in string
+				var valStr string
+				if param.Value == nil {
+					valStr = ""
+				} else {
+					valStr = fmt.Sprintf("%v", param.Value)
+				}
+				metrics.ConfigMap[param.Key] = valStr
+			}
+		}
+
+		// Perform parameter replacement using the centralized Replacer
+		// This handles all protocols (HTTP, SSH, JDBC, etc.)
+		replacer := param.NewReplacer()
+		if err := replacer.ReplaceMetricsParams(metrics, metrics.ConfigMap); err != nil {
+			mc.logger.Error(err, "failed to replace params", "metricsName", metrics.Name)
+			resultChan <- mc.createErrorResponse(metrics, job, constants.CollectFail, fmt.Sprintf("Param replacement error: %v", err))
+			return
+		}
+
 		// Get the appropriate collector based on protocol
 		collector, err := strategy.CollectorFor(metrics.Protocol)
 		if err != nil {
@@ -550,7 +559,7 @@ func (mc *MetricsCollector) CollectMetrics(metrics *jobtypes.Metrics, job *jobty
 			return
 		}
 
-		// Perform the actual collection with metrics (parameters should already be replaced by CommonDispatcher)
+		// Perform the actual collection
 		result := collector.Collect(metrics)
 
 		// calculate fields and convert units by metrics.Calculates and metrics.Units
