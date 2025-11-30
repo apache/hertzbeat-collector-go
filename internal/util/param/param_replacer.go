@@ -148,6 +148,11 @@ func (r *Replacer) ReplaceMetricsParams(metrics *jobtypes.Metrics, paramMap map[
 		r.replaceHTTPParams(metrics.HTTP, paramMap)
 	}
 
+	// 4. Redis
+	if metrics.Redis != nil {
+		r.replaceRedisParams(metrics.Redis, paramMap)
+	}
+
 	// Replace parameters in basic metrics fields
 	if err := r.replaceBasicMetricsParams(metrics, paramMap); err != nil {
 		return fmt.Errorf("failed to replace basic metrics params: %w", err)
@@ -201,6 +206,22 @@ func (r *Replacer) replaceHTTPParams(http *jobtypes.HTTPProtocol, paramMap map[s
 		auth.DigestAuthUsername = r.replaceParamPlaceholders(auth.DigestAuthUsername, paramMap)
 		auth.DigestAuthPassword = r.replaceParamPlaceholders(auth.DigestAuthPassword, paramMap)
 		auth.BearerTokenToken = r.replaceParamPlaceholders(auth.BearerTokenToken, paramMap)
+	}
+}
+
+// replaceRedisParams specific replacement logic for RedisProtocol struct
+func (r *Replacer) replaceRedisParams(redis *jobtypes.RedisProtocol, paramMap map[string]string) {
+	redis.Host = r.replaceParamPlaceholders(redis.Host, paramMap)
+	redis.Port = r.replaceParamPlaceholders(redis.Port, paramMap)
+	redis.Username = r.replaceParamPlaceholders(redis.Username, paramMap)
+	redis.Password = r.replaceParamPlaceholders(redis.Password, paramMap)
+	redis.Pattern = r.replaceParamPlaceholders(redis.Pattern, paramMap)
+	redis.Timeout = r.replaceParamPlaceholders(redis.Timeout, paramMap)
+	if redis.SSHTunnel != nil {
+		redis.SSHTunnel.Host = r.replaceParamPlaceholders(redis.SSHTunnel.Host, paramMap)
+		redis.SSHTunnel.Port = r.replaceParamPlaceholders(redis.SSHTunnel.Port, paramMap)
+		redis.SSHTunnel.Username = r.replaceParamPlaceholders(redis.SSHTunnel.Username, paramMap)
+		redis.SSHTunnel.Password = r.replaceParamPlaceholders(redis.SSHTunnel.Password, paramMap)
 	}
 }
 
