@@ -51,6 +51,7 @@ type Metrics struct {
 	JMX     *JMXProtocol     `json:"jmx,omitempty"`
 	Redis   *RedisProtocol   `json:"redis,omitempty"`
 	MongoDB *MongoDBProtocol `json:"mongodb,omitempty"`
+	Milvus  *MilvusProtocol  `json:"milvus,omitempty"`
 }
 
 // Field represents a metric field
@@ -276,6 +277,15 @@ type MongoDBProtocol struct {
 	AuthDatabase string `json:"authDatabase"`
 	Command      string `json:"command"`
 	Timeout      int    `json:"timeout"`
+}
+
+// MilvusProtocol represents Milvus protocol configuration
+type MilvusProtocol struct {
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Timeout  string `json:"timeout"`
 }
 
 // GetInterval returns the interval for the metric, using default if not set
