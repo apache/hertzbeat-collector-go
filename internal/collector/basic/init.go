@@ -22,6 +22,7 @@ package basic
 import (
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic/database"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic/http"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic/redis"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic/ssh"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect/strategy"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
@@ -48,10 +49,11 @@ func init() {
 		return http.NewHTTPCollector(logger)
 	})
 
+	strategy.RegisterFactory("redis", func(logger logger.Logger) strategy.Collector {
+		return redis.NewRedisCollector(logger)
+	})
+
 	// More protocols can be added here in the future:
-	// strategy.RegisterFactory("redis", func(logger logger.Logger) strategy.Collector {
-	//     return redis.NewRedisCollector(logger)
-	// })
 }
 
 // InitializeAllCollectors initializes all registered collectors
