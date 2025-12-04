@@ -260,11 +260,13 @@ type JMXProtocol struct {
 
 // RedisProtocol represents Redis protocol configuration
 type RedisProtocol struct {
-	Host     string `json:"host"`
-	Port     int    `json:"port"`
-	Password string `json:"password"`
-	Pattern  string `json:"pattern"`
-	Timeout  int    `json:"timeout"`
+	Host      string     `json:"host"`
+	Port      string     `json:"port"`
+	Username  string     `json:"username"`
+	Password  string     `json:"password"`
+	Pattern   string     `json:"pattern"`
+	Timeout   string     `json:"timeout"`
+	SSHTunnel *SSHTunnel `json:"sshTunnel,omitempty"`
 }
 
 // MongoDBProtocol represents MongoDB protocol configuration
