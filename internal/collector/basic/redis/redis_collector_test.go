@@ -27,6 +27,7 @@ import (
 	"github.com/alicebob/miniredis/v2"
 	"github.com/stretchr/testify/assert"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
 	consts "hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
@@ -56,7 +57,7 @@ func TestRedisCollector_PreCheck(t *testing.T) {
 	assert.Contains(t, err.Error(), "redis configuration is required")
 
 	// Test missing host
-	metrics.Redis = &jobtypes.RedisProtocol{
+	metrics.Redis = &protocol.RedisProtocol{
 		Port: "6379",
 	}
 	err = collector.PreCheck(metrics)
@@ -64,7 +65,7 @@ func TestRedisCollector_PreCheck(t *testing.T) {
 	assert.Contains(t, err.Error(), "redis host is required")
 
 	// Test missing port
-	metrics.Redis = &jobtypes.RedisProtocol{
+	metrics.Redis = &protocol.RedisProtocol{
 		Host: "localhost",
 	}
 	err = collector.PreCheck(metrics)
@@ -72,7 +73,7 @@ func TestRedisCollector_PreCheck(t *testing.T) {
 	assert.Contains(t, err.Error(), "redis port is required")
 
 	// Test valid configuration
-	metrics.Redis = &jobtypes.RedisProtocol{
+	metrics.Redis = &protocol.RedisProtocol{
 		Host: "localhost",
 		Port: "6379",
 	}
@@ -98,7 +99,7 @@ func TestRedisCollector_Collect(t *testing.T) {
 
 	metrics := &jobtypes.Metrics{
 		Name: "redis_test",
-		Redis: &jobtypes.RedisProtocol{
+		Redis: &protocol.RedisProtocol{
 			Host: host,
 			Port: port,
 		},
@@ -145,7 +146,7 @@ func TestRedisCollector_Collect_Auth(t *testing.T) {
 	// Test with correct password
 	metrics := &jobtypes.Metrics{
 		Name: "redis_auth_test",
-		Redis: &jobtypes.RedisProtocol{
+		Redis: &protocol.RedisProtocol{
 			Host:     host,
 			Port:     port,
 			Password: "password123",

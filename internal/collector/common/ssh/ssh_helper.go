@@ -29,12 +29,12 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
-	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
 // CreateSSHClientConfig creates SSH client configuration based on the protocol config
-func CreateSSHClientConfig(config *jobtypes.SSHProtocol, logger logger.Logger) (*ssh.ClientConfig, error) {
+func CreateSSHClientConfig(config *protocol.SSHProtocol, logger logger.Logger) (*ssh.ClientConfig, error) {
 	clientConfig := &ssh.ClientConfig{
 		User:            config.Username,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // Note: In production, you should verify host keys
@@ -100,7 +100,7 @@ func ParsePrivateKey(privateKeyStr string) (ssh.Signer, error) {
 }
 
 // createProxyClientConfig creates SSH client configuration for proxy server
-func createProxyClientConfig(config *jobtypes.SSHProtocol, logger logger.Logger) (*ssh.ClientConfig, error) {
+func createProxyClientConfig(config *protocol.SSHProtocol, logger logger.Logger) (*ssh.ClientConfig, error) {
 	clientConfig := &ssh.ClientConfig{
 		User:            config.ProxyUsername,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
@@ -127,7 +127,7 @@ func createProxyClientConfig(config *jobtypes.SSHProtocol, logger logger.Logger)
 }
 
 // dialViaProxy establishes SSH connection through a proxy server
-func dialViaProxy(ctx context.Context, config *jobtypes.SSHProtocol, targetConfig *ssh.ClientConfig, logger logger.Logger) (*ssh.Client, error) {
+func dialViaProxy(ctx context.Context, config *protocol.SSHProtocol, targetConfig *ssh.ClientConfig, logger logger.Logger) (*ssh.Client, error) {
 	// Create proxy client configuration
 	proxyConfig, err := createProxyClientConfig(config, logger)
 	if err != nil {
@@ -201,7 +201,7 @@ func DialWithContext(ctx context.Context, network, addr string, config *ssh.Clie
 }
 
 // DialWithProxy dials SSH connection through proxy with context support
-func DialWithProxy(ctx context.Context, sshConfig *jobtypes.SSHProtocol, clientConfig *ssh.ClientConfig, logger logger.Logger) (*ssh.Client, error) {
+func DialWithProxy(ctx context.Context, sshConfig *protocol.SSHProtocol, clientConfig *ssh.ClientConfig, logger logger.Logger) (*ssh.Client, error) {
 	// TODO: implement Reuse connection logic
 
 	// Check if proxy is enabled and configured
