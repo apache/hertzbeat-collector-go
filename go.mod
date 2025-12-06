@@ -33,8 +33,8 @@ require (
 	github.com/cockroachdb/logtags v0.0.0-20211118104740-dabe8e521a4f // indirect
 	github.com/cockroachdb/redact v1.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/getsentry/sentry-go v0.12.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/getsentry/sentry-go v0.12.0 // indirect
 	github.com/goccy/go-json v0.10.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
