@@ -31,7 +31,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/ssh"
 
-	sshhelper "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/ssh"
+	sshhelper "hertzbeat.apache.org/hertzbeat-collector-go/internal/util/ssh"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
 	consts "hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"

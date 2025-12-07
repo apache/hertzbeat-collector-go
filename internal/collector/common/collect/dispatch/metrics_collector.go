@@ -34,6 +34,7 @@ import (
 	_ "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect/strategy"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	_ "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/extension/milvus"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
