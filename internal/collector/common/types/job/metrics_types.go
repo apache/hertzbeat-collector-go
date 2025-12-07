@@ -53,6 +53,7 @@ type Metrics struct {
 	JMX     *protocol.JMXProtocol     `json:"jmx,omitempty"`
 	Redis   *protocol.RedisProtocol   `json:"redis,omitempty"`
 	MongoDB *protocol.MongoDBProtocol `json:"mongodb,omitempty"`
+	Milvus  *protocol.MilvusProtocol  `json:"milvus,omitempty"`
 }
 
 // Field represents a metric field
@@ -168,6 +169,119 @@ type ValueRow struct {
 }
 
 // Protocol specific types
+
+// HTTPProtocol represents HTTP protocol configuration
+type HTTPProtocol struct {
+	URL           string            `json:"url"`
+	Method        string            `json:"method"`
+	Headers       map[string]string `json:"headers"`
+	Params        map[string]string `json:"params"`
+	Body          string            `json:"body"`
+	ParseScript   string            `json:"parseScript"`
+	ParseType     string            `json:"parseType"`
+	Keyword       string            `json:"keyword"`
+	Timeout       string            `json:"timeout"`
+	SSL           string            `json:"ssl"`
+	Authorization *Authorization    `json:"authorization"`
+}
+
+// Authorization represents HTTP authorization configuration
+type Authorization struct {
+	Type               string `json:"type"`
+	BasicAuthUsername  string `json:"basicAuthUsername"`
+	BasicAuthPassword  string `json:"basicAuthPassword"`
+	DigestAuthUsername string `json:"digestAuthUsername"`
+	DigestAuthPassword string `json:"digestAuthPassword"`
+	BearerTokenToken   string `json:"bearerTokenToken"`
+}
+
+// SSHProtocol represents SSH protocol configuration
+type SSHProtocol struct {
+	Host                 string `json:"host"`
+	Port                 string `json:"port"`
+	Username             string `json:"username"`
+	Password             string `json:"password"`
+	PrivateKey           string `json:"privateKey"`
+	PrivateKeyPassphrase string `json:"privateKeyPassphrase"`
+	Script               string `json:"script"`
+	ParseType            string `json:"parseType"`
+	ParseScript          string `json:"parseScript"`
+	Timeout              string `json:"timeout"`
+	ReuseConnection      string `json:"reuseConnection"`
+	UseProxy             string `json:"useProxy"`
+	ProxyHost            string `json:"proxyHost"`
+	ProxyPort            string `json:"proxyPort"`
+	ProxyUsername        string `json:"proxyUsername"`
+	ProxyPassword        string `json:"proxyPassword"`
+	ProxyPrivateKey      string `json:"proxyPrivateKey"`
+}
+
+// JDBCProtocol represents JDBC protocol configuration
+type JDBCProtocol struct {
+	Host            string              `json:"host"`
+	Port            string              `json:"port"`
+	Platform        string              `json:"platform"`
+	Username        string              `json:"username"`
+	Password        string              `json:"password"`
+	Database        string              `json:"database"`
+	Timeout         string              `json:"timeout"`
+	QueryType       string              `json:"queryType"`
+	SQL             string              `json:"sql"`
+	URL             string              `json:"url"`
+	ReuseConnection string              `json:"reuseConnection"`
+	SSHTunnel       *protocol.SSHTunnel `json:"sshTunnel,omitempty"`
+}
+
+// SNMPProtocol represents SNMP protocol configuration
+type SNMPProtocol struct {
+	Host        string `json:"host"`
+	Port        int    `json:"port"`
+	Version     string `json:"version"`
+	Community   string `json:"community"`
+	Username    string `json:"username"`
+	AuthType    string `json:"authType"`
+	AuthPasswd  string `json:"authPasswd"`
+	PrivType    string `json:"privType"`
+	PrivPasswd  string `json:"privPasswd"`
+	ContextName string `json:"contextName"`
+	Timeout     int    `json:"timeout"`
+	Operation   string `json:"operation"`
+	OIDs        string `json:"oids"`
+}
+
+// JMXProtocol represents JMX protocol configuration
+type JMXProtocol struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Protocol string `json:"protocol"`
+	URL      string `json:"url"`
+	Timeout  int    `json:"timeout"`
+}
+
+// RedisProtocol represents Redis protocol configuration
+type RedisProtocol struct {
+	Host      string              `json:"host"`
+	Port      string              `json:"port"`
+	Username  string              `json:"username"`
+	Password  string              `json:"password"`
+	Pattern   string              `json:"pattern"`
+	Timeout   string              `json:"timeout"`
+	SSHTunnel *protocol.SSHTunnel `json:"sshTunnel,omitempty"`
+}
+
+// MongoDBProtocol represents MongoDB protocol configuration
+type MongoDBProtocol struct {
+	Host         string `json:"host"`
+	Port         int    `json:"port"`
+	Username     string `json:"username"`
+	Password     string `json:"password"`
+	Database     string `json:"database"`
+	AuthDatabase string `json:"authDatabase"`
+	Command      string `json:"command"`
+	Timeout      int    `json:"timeout"`
+}
 
 // GetInterval returns the interval for the metric, using default if not set
 func (m *Metrics) GetInterval() time.Duration {

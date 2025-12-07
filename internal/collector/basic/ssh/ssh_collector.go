@@ -26,12 +26,12 @@ import (
 	"strings"
 	"time"
 
-	sshhelper "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/ssh"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 	consts "hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
+	sshhelper "hertzbeat.apache.org/hertzbeat-collector-go/internal/util/ssh"
 )
 
 const (
