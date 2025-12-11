@@ -30,13 +30,20 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/ssh"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect/strategy"
 
-	sshhelper "hertzbeat.apache.org/hertzbeat-collector-go/internal/util/ssh"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 	consts "hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
+	sshhelper "hertzbeat.apache.org/hertzbeat-collector-go/internal/util/ssh"
 )
+
+func init() {
+	strategy.RegisterFactory(ProtocolRedis, func(logger logger.Logger) strategy.Collector {
+		return NewRedisCollector(logger)
+	})
+}
 
 const (
 	ProtocolRedis  = "redis"
