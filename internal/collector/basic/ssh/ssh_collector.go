@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect/strategy"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 	consts "hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
@@ -33,6 +34,12 @@ import (
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
 	sshhelper "hertzbeat.apache.org/hertzbeat-collector-go/internal/util/ssh"
 )
+
+func init() {
+	strategy.RegisterFactory(ProtocolSSH, func(logger logger.Logger) strategy.Collector {
+		return NewSSHCollector(logger)
+	})
+}
 
 const (
 	ProtocolSSH = "ssh"

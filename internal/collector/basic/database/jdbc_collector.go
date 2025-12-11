@@ -33,18 +33,25 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
-	pq "github.com/lib/pq"
 	_ "github.com/microsoft/go-mssqldb"
-	_ "github.com/sijms/go-ora/v2" // Oracle driver
+	_ "github.com/sijms/go-ora/v2"
 	"golang.org/x/crypto/ssh"
 
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect/strategy"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
 )
+
+func init() {
+	strategy.RegisterFactory("jdbc", func(logger logger.Logger) strategy.Collector {
+		return NewJDBCCollector(logger)
+	})
+}
 
 const (
 	ProtocolJDBC = "jdbc"

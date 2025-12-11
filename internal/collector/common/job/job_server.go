@@ -25,9 +25,9 @@ import (
 	"fmt"
 	"sync"
 
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect/dispatch"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect/strategy"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/dispatcher"
 	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/collector"
@@ -150,7 +150,9 @@ func (r *Runner) Start(ctx context.Context) error {
 
 	// Initialize all collectors
 	r.Logger.Info("Initializing collectors...")
-	basic.InitializeAllCollectors(r.Logger)
+
+	// Create collector instances using registered factory functions
+	strategy.InitializeCollectors(r.Logger)
 
 	// Start the time dispatcher
 	if r.TimeDispatch != nil {

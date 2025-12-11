@@ -22,6 +22,7 @@ import (
 	"os"
 
 	"hertzbeat.apache.org/hertzbeat-collector-go/cmd/root"
+	_ "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic/standard"
 )
 
 func main() {
