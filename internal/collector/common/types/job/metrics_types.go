@@ -20,6 +20,8 @@ package job
 import (
 	"fmt"
 	"time"
+
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 )
 
 // Metrics represents a metric configuration
@@ -44,14 +46,14 @@ type Metrics struct {
 	HasSubTask  bool              `json:"hasSubTask"`
 
 	// Protocol specific fields
-	HTTP    *HTTPProtocol    `json:"http,omitempty"`
-	SSH     interface{}      `json:"ssh,omitempty"`  // Can be SSHProtocol
-	JDBC    interface{}      `json:"jdbc,omitempty"` // Can be JDBCProtocol or map[string]interface{}
-	SNMP    *SNMPProtocol    `json:"snmp,omitempty"`
-	JMX     *JMXProtocol     `json:"jmx,omitempty"`
-	Redis   *RedisProtocol   `json:"redis,omitempty"`
-	MongoDB *MongoDBProtocol `json:"mongodb,omitempty"`
-	Milvus  *MilvusProtocol  `json:"milvus,omitempty"`
+	HTTP    *protocol.HTTPProtocol    `json:"http,omitempty"`
+	SSH     *protocol.SSHProtocol     `json:"ssh,omitempty"`
+	JDBC    *protocol.JDBCProtocol    `json:"jdbc,omitempty"`
+	SNMP    *protocol.SNMPProtocol    `json:"snmp,omitempty"`
+	JMX     *protocol.JMXProtocol     `json:"jmx,omitempty"`
+	Redis   *protocol.RedisProtocol   `json:"redis,omitempty"`
+	MongoDB *protocol.MongoDBProtocol `json:"mongodb,omitempty"`
+	Milvus  *protocol.MilvusProtocol  `json:"milvus,omitempty"`
 }
 
 // Field represents a metric field
@@ -216,18 +218,18 @@ type SSHProtocol struct {
 
 // JDBCProtocol represents JDBC protocol configuration
 type JDBCProtocol struct {
-	Host            string     `json:"host"`
-	Port            string     `json:"port"`
-	Platform        string     `json:"platform"`
-	Username        string     `json:"username"`
-	Password        string     `json:"password"`
-	Database        string     `json:"database"`
-	Timeout         string     `json:"timeout"`
-	QueryType       string     `json:"queryType"`
-	SQL             string     `json:"sql"`
-	URL             string     `json:"url"`
-	ReuseConnection string     `json:"reuseConnection"`
-	SSHTunnel       *SSHTunnel `json:"sshTunnel,omitempty"`
+	Host            string              `json:"host"`
+	Port            string              `json:"port"`
+	Platform        string              `json:"platform"`
+	Username        string              `json:"username"`
+	Password        string              `json:"password"`
+	Database        string              `json:"database"`
+	Timeout         string              `json:"timeout"`
+	QueryType       string              `json:"queryType"`
+	SQL             string              `json:"sql"`
+	URL             string              `json:"url"`
+	ReuseConnection string              `json:"reuseConnection"`
+	SSHTunnel       *protocol.SSHTunnel `json:"sshTunnel,omitempty"`
 }
 
 // SNMPProtocol represents SNMP protocol configuration
@@ -260,13 +262,13 @@ type JMXProtocol struct {
 
 // RedisProtocol represents Redis protocol configuration
 type RedisProtocol struct {
-	Host      string     `json:"host"`
-	Port      string     `json:"port"`
-	Username  string     `json:"username"`
-	Password  string     `json:"password"`
-	Pattern   string     `json:"pattern"`
-	Timeout   string     `json:"timeout"`
-	SSHTunnel *SSHTunnel `json:"sshTunnel,omitempty"`
+	Host      string              `json:"host"`
+	Port      string              `json:"port"`
+	Username  string              `json:"username"`
+	Password  string              `json:"password"`
+	Pattern   string              `json:"pattern"`
+	Timeout   string              `json:"timeout"`
+	SSHTunnel *protocol.SSHTunnel `json:"sshTunnel,omitempty"`
 }
 
 // MongoDBProtocol represents MongoDB protocol configuration
@@ -279,15 +281,6 @@ type MongoDBProtocol struct {
 	AuthDatabase string `json:"authDatabase"`
 	Command      string `json:"command"`
 	Timeout      int    `json:"timeout"`
-}
-
-// MilvusProtocol represents Milvus protocol configuration
-type MilvusProtocol struct {
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Timeout  string `json:"timeout"`
 }
 
 // GetInterval returns the interval for the metric, using default if not set
@@ -411,15 +404,6 @@ type CollectRepMetricsData struct {
 	Values    []ValueRow        `json:"values,omitempty"`
 	Labels    map[string]string `json:"labels,omitempty"`
 	Metadata  map[string]string `json:"metadata,omitempty"`
-}
-
-// SSHTunnel represents SSH tunnel configuration
-type SSHTunnel struct {
-	Enable   string `json:"enable"`
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
 }
 
 // CollectResponseEventListener defines the interface for handling collect response events

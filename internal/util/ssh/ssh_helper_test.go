@@ -32,7 +32,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
 
-	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
@@ -65,7 +65,7 @@ func TestCreateSSHClientConfig_PasswordAuth(t *testing.T) {
 	testLogger := createTestLogger()
 
 	// Test configuration with password authentication
-	config := &jobtypes.SSHProtocol{
+	config := &protocol.SSHProtocol{
 		Username: "testuser",
 		Password: "testpassword",
 	}
@@ -86,7 +86,7 @@ func TestCreateSSHClientConfig_PrivateKeyAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test configuration with private key authentication
-	config := &jobtypes.SSHProtocol{
+	config := &protocol.SSHProtocol{
 		Username:   "testuser",
 		PrivateKey: privateKeyStr,
 	}
@@ -103,7 +103,7 @@ func TestCreateSSHClientConfig_NoAuthMethod(t *testing.T) {
 	testLogger := createTestLogger()
 
 	// Test configuration with no authentication method
-	config := &jobtypes.SSHProtocol{
+	config := &protocol.SSHProtocol{
 		Username: "testuser",
 	}
 
@@ -153,7 +153,7 @@ func TestCreateProxyClientConfig_PasswordAuth(t *testing.T) {
 	testLogger := createTestLogger()
 
 	// Test configuration with proxy password authentication
-	config := &jobtypes.SSHProtocol{
+	config := &protocol.SSHProtocol{
 		ProxyUsername: "proxyuser",
 		ProxyPassword: "proxypassword",
 	}
@@ -174,7 +174,7 @@ func TestCreateProxyClientConfig_PrivateKeyAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test configuration with proxy private key authentication
-	config := &jobtypes.SSHProtocol{
+	config := &protocol.SSHProtocol{
 		ProxyUsername:   "proxyuser",
 		ProxyPrivateKey: privateKeyStr,
 	}
@@ -191,7 +191,7 @@ func TestCreateProxyClientConfig_NoAuthMethod(t *testing.T) {
 	testLogger := createTestLogger()
 
 	// Test configuration with no proxy authentication method
-	config := &jobtypes.SSHProtocol{
+	config := &protocol.SSHProtocol{
 		ProxyUsername: "proxyuser",
 	}
 
@@ -225,14 +225,14 @@ func TestDialWithProxy_Disabled(t *testing.T) {
 	testLogger := createTestLogger()
 
 	// Test with proxy disabled - should fall back to direct connection
-	sshConfig := &jobtypes.SSHProtocol{
-		Host:       "localhost",
-		Port:       "22",
-		Username:   "testuser",
-		Password:   "testpassword",
-		UseProxy:   "false", // Proxy disabled
-		ProxyHost:  "",
-		ProxyPort:  "",
+	sshConfig := &protocol.SSHProtocol{
+		Host:      "localhost",
+		Port:      "22",
+		Username:  "testuser",
+		Password:  "testpassword",
+		UseProxy:  "false", // Proxy disabled
+		ProxyHost: "",
+		ProxyPort: "",
 	}
 
 	clientConfig := &ssh.ClientConfig{
@@ -254,14 +254,14 @@ func TestDialWithProxy_EnabledButNotConfigured(t *testing.T) {
 	testLogger := createTestLogger()
 
 	// Test with proxy enabled but not properly configured
-	sshConfig := &jobtypes.SSHProtocol{
-		Host:       "localhost",
-		Port:       "22",
-		Username:   "testuser",
-		Password:   "testpassword",
-		UseProxy:   "true", // Proxy enabled
-		ProxyHost:  "",     // But not configured
-		ProxyPort:  "",
+	sshConfig := &protocol.SSHProtocol{
+		Host:      "localhost",
+		Port:      "22",
+		Username:  "testuser",
+		Password:  "testpassword",
+		UseProxy:  "true", // Proxy enabled
+		ProxyHost: "",     // But not configured
+		ProxyPort: "",
 	}
 
 	clientConfig := &ssh.ClientConfig{
@@ -284,7 +284,7 @@ func TestDialWithProxy_EnabledAndConfigured(t *testing.T) {
 	testLogger := createTestLogger()
 
 	// Test with proxy enabled and configured but missing credentials
-	sshConfig := &jobtypes.SSHProtocol{
+	sshConfig := &protocol.SSHProtocol{
 		Host:          "localhost",
 		Port:          "22",
 		Username:      "testuser",
@@ -313,7 +313,7 @@ func TestDialWithProxy_EnabledAndFullyConfigured(t *testing.T) {
 	testLogger := createTestLogger()
 
 	// Test with proxy enabled and fully configured but missing proxy auth
-	sshConfig := &jobtypes.SSHProtocol{
+	sshConfig := &protocol.SSHProtocol{
 		Host:          "localhost",
 		Port:          "22",
 		Username:      "testuser",

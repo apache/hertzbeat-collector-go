@@ -40,6 +40,7 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
@@ -184,7 +185,7 @@ type sshTunnelHelper struct {
 // startSSHTunnel starts an SSH tunnel
 // It connects to the SSH bastion, listens on a local random port,
 // and forwards traffic to the target database.
-func startSSHTunnel(config *jobtypes.SSHTunnel, remoteHost, remotePort string, timeout time.Duration, log logger.Logger) (*sshTunnelHelper, string, string, error) {
+func startSSHTunnel(config *protocol.SSHTunnel, remoteHost, remotePort string, timeout time.Duration, log logger.Logger) (*sshTunnelHelper, string, string, error) {
 	sshHost := config.Host
 	sshPort, err := strconv.Atoi(config.Port)
 	if err != nil {
@@ -314,7 +315,7 @@ func NewJDBCCollector(logger logger.Logger) *JDBCCollector {
 }
 
 // extractJDBCConfig extracts JDBC configuration from interface{} type
-func extractJDBCConfig(jdbcInterface interface{}) (*jobtypes.JDBCProtocol, error) {
+func extractJDBCConfig(jdbcInterface interface{}) (*protocol.JDBCProtocol, error) {
 	replacer := param.NewReplacer()
 	return replacer.ExtractJDBCConfig(jdbcInterface)
 }
@@ -396,7 +397,7 @@ func (jc *JDBCCollector) PreCheck(metrics *jobtypes.Metrics) error {
 }
 
 // checkTunnelParam validates SSH tunnel configuration
-func (jc *JDBCCollector) checkTunnelParam(config *jobtypes.SSHTunnel) error {
+func (jc *JDBCCollector) checkTunnelParam(config *protocol.SSHTunnel) error {
 	if config == nil {
 		return nil
 	}
@@ -602,7 +603,7 @@ func validateURL(rawURL string, platform string) error {
 }
 
 // constructDatabaseURL constructs the database connection URL/DSN
-func (jc *JDBCCollector) constructDatabaseURL(jdbc *jobtypes.JDBCProtocol, host, port string) (string, error) {
+func (jc *JDBCCollector) constructDatabaseURL(jdbc *protocol.JDBCProtocol, host, port string) (string, error) {
 	// 1. If user provided a full URL, use it (already validated in PreCheck)
 	if jdbc.URL != "" {
 		// Validate again to prevent bypassing PreCheck

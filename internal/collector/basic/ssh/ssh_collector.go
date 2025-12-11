@@ -27,6 +27,7 @@ import (
 	"time"
 
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 	consts "hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
@@ -59,7 +60,7 @@ func NewSSHCollector(logger logger.Logger) *SSHCollector {
 
 // extractSSHConfig extracts SSH configuration from interface{} type
 // This function uses the parameter replacer for consistent configuration extraction
-func extractSSHConfig(sshInterface interface{}) (*jobtypes.SSHProtocol, error) {
+func extractSSHConfig(sshInterface interface{}) (*protocol.SSHProtocol, error) {
 	replacer := param.NewReplacer()
 	return replacer.ExtractSSHConfig(sshInterface)
 }
@@ -167,7 +168,7 @@ func (sshc *SSHCollector) getTimeout(timeoutStr string) time.Duration {
 }
 
 // executeSSHScript executes the SSH script and returns the result
-func (sshc *SSHCollector) executeSSHScript(config *jobtypes.SSHProtocol, timeout time.Duration) (string, error) {
+func (sshc *SSHCollector) executeSSHScript(config *protocol.SSHProtocol, timeout time.Duration) (string, error) {
 	// Create SSH client configuration using helper function
 	clientConfig, err := sshhelper.CreateSSHClientConfig(config, sshc.logger)
 	if err != nil {

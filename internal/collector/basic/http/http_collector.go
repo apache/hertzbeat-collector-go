@@ -35,6 +35,7 @@ import (
 
 	"github.com/prometheus/common/expfmt"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
@@ -209,7 +210,7 @@ func (hc *HTTPCollector) Collect(metrics *job.Metrics) *job.CollectRepMetricsDat
 }
 
 // handleDigestAuth generates a new request with the Digest Authorization header
-func (hc *HTTPCollector) handleDigestAuth(originalReq *http.Request, authHeader string, authConfig *job.Authorization) (*http.Request, error) {
+func (hc *HTTPCollector) handleDigestAuth(originalReq *http.Request, authHeader string, authConfig *protocol.Authorization) (*http.Request, error) {
 	params := hc.parseAuthHeader(authHeader)
 	realm := params["realm"]
 	nonce := params["nonce"]
@@ -298,7 +299,7 @@ func (hc *HTTPCollector) generateCnonce() string {
 	return hex.EncodeToString(b)
 }
 
-func (hc *HTTPCollector) createRequest(config *job.HTTPProtocol, targetURL string) (*http.Request, error) {
+func (hc *HTTPCollector) createRequest(config *protocol.HTTPProtocol, targetURL string) (*http.Request, error) {
 	method := strings.ToUpper(config.Method)
 	if method == "" {
 		method = "GET"
@@ -391,7 +392,7 @@ func (hc *HTTPCollector) parsePrometheus(body []byte, metrics *job.Metrics) (*jo
 	return response, nil
 }
 
-func (hc *HTTPCollector) parseWebsite(body []byte, statusCode int, responseTime int64, metrics *job.Metrics, httpConfig *job.HTTPProtocol) (*job.CollectRepMetricsData, error) {
+func (hc *HTTPCollector) parseWebsite(body []byte, statusCode int, responseTime int64, metrics *job.Metrics, httpConfig *protocol.HTTPProtocol) (*job.CollectRepMetricsData, error) {
 	response := hc.createSuccessResponse(metrics)
 	row := job.ValueRow{Columns: make([]string, len(metrics.AliasFields))}
 	keyword := httpConfig.Keyword
@@ -430,7 +431,7 @@ func (hc *HTTPCollector) parseHeader(header http.Header, metrics *job.Metrics) (
 	return response, nil
 }
 
-func (hc *HTTPCollector) parseJsonPath(body []byte, metrics *job.Metrics, responseTime int64, httpConfig *job.HTTPProtocol) (*job.CollectRepMetricsData, error) {
+func (hc *HTTPCollector) parseJsonPath(body []byte, metrics *job.Metrics, responseTime int64, httpConfig *protocol.HTTPProtocol) (*job.CollectRepMetricsData, error) {
 	response := hc.createSuccessResponse(metrics)
 	var data interface{}
 	decoder := json.NewDecoder(bytes.NewReader(body))

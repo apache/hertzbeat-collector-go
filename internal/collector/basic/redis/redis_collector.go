@@ -33,6 +33,7 @@ import (
 
 	sshhelper "hertzbeat.apache.org/hertzbeat-collector-go/internal/util/ssh"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 	consts "hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
@@ -135,7 +136,7 @@ func (rc *RedisCollector) Collect(metrics *jobtypes.Metrics) *jobtypes.CollectRe
 	return response
 }
 
-func (rc *RedisCollector) collectSingle(ctx context.Context, metrics *jobtypes.Metrics, config *jobtypes.RedisProtocol, dialer func(context.Context, string, string) (net.Conn, error), timeout time.Duration, response *jobtypes.CollectRepMetricsData, startTime time.Time) {
+func (rc *RedisCollector) collectSingle(ctx context.Context, metrics *jobtypes.Metrics, config *protocol.RedisProtocol, dialer func(context.Context, string, string) (net.Conn, error), timeout time.Duration, response *jobtypes.CollectRepMetricsData, startTime time.Time) {
 	opts := &redis.Options{
 		Addr:        fmt.Sprintf("%s:%s", config.Host, config.Port),
 		Username:    config.Username,
@@ -166,7 +167,7 @@ func (rc *RedisCollector) collectSingle(ctx context.Context, metrics *jobtypes.M
 	rc.addValueRow(response, metrics.AliasFields, parseMap)
 }
 
-func (rc *RedisCollector) collectCluster(ctx context.Context, metrics *jobtypes.Metrics, config *jobtypes.RedisProtocol, dialer func(context.Context, string, string) (net.Conn, error), timeout time.Duration, response *jobtypes.CollectRepMetricsData, startTime time.Time) {
+func (rc *RedisCollector) collectCluster(ctx context.Context, metrics *jobtypes.Metrics, config *protocol.RedisProtocol, dialer func(context.Context, string, string) (net.Conn, error), timeout time.Duration, response *jobtypes.CollectRepMetricsData, startTime time.Time) {
 	opts := &redis.ClusterOptions{
 		Addrs:       []string{fmt.Sprintf("%s:%s", config.Host, config.Port)},
 		Username:    config.Username,
@@ -293,13 +294,13 @@ func (rc *RedisCollector) parseInfo(info string) map[string]string {
 }
 
 // createRedisDialer creates a dialer function that supports SSH tunneling
-func (rc *RedisCollector) createRedisDialer(sshTunnel *jobtypes.SSHTunnel) (func(context.Context, string, string) (net.Conn, error), error) {
+func (rc *RedisCollector) createRedisDialer(sshTunnel *protocol.SSHTunnel) (func(context.Context, string, string) (net.Conn, error), error) {
 	if sshTunnel == nil || sshTunnel.Enable != "true" {
 		return nil, nil
 	}
 
 	// Create SSH config
-	sshConfig := &jobtypes.SSHProtocol{
+	sshConfig := &protocol.SSHProtocol{
 		Host:     sshTunnel.Host,
 		Port:     sshTunnel.Port,
 		Username: sshTunnel.Username,
