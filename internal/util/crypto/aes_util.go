@@ -26,7 +26,7 @@ import (
 	"sync"
 	"unicode"
 
-	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 

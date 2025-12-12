@@ -26,9 +26,9 @@ import (
 	"strconv"
 	"strings"
 
-	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
-	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job"
+	protocol2 "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job/protocol"
+	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/crypto"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
@@ -44,7 +44,7 @@ func NewReplacer() *Replacer {
 
 // PreprocessJobPasswords decrypts passwords in job configmap once during job creation
 // This permanently replaces encrypted passwords with decrypted ones in the job configmap
-func (r *Replacer) PreprocessJobPasswords(job *jobtypes.Job) error {
+func (r *Replacer) PreprocessJobPasswords(job *job.Job) error {
 	if job == nil || job.Configmap == nil {
 		return nil
 	}
@@ -71,7 +71,7 @@ func (r *Replacer) PreprocessJobPasswords(job *jobtypes.Job) error {
 }
 
 // ReplaceJobParams replaces all parameter placeholders in job configuration
-func (r *Replacer) ReplaceJobParams(job *jobtypes.Job) (*jobtypes.Job, error) {
+func (r *Replacer) ReplaceJobParams(job *job.Job) (*job.Job, error) {
 	if job == nil {
 		return nil, fmt.Errorf("job is nil")
 	}
@@ -97,7 +97,7 @@ func (r *Replacer) ReplaceJobParams(job *jobtypes.Job) (*jobtypes.Job, error) {
 
 // createParamMapSimple creates a parameter map from configmap entries
 // Assumes passwords have already been decrypted by PreprocessJobPasswords
-func (r *Replacer) createParamMapSimple(configmap []jobtypes.Configmap) map[string]string {
+func (r *Replacer) createParamMapSimple(configmap []job.Configmap) map[string]string {
 	paramMap := make(map[string]string)
 
 	for _, config := range configmap {
@@ -129,7 +129,7 @@ func (r *Replacer) createParamMapSimple(configmap []jobtypes.Configmap) map[stri
 
 // ReplaceMetricsParams replaces parameters in metrics configuration
 // Exported method to be called by MetricsCollector
-func (r *Replacer) ReplaceMetricsParams(metrics *jobtypes.Metrics, paramMap map[string]string) error {
+func (r *Replacer) ReplaceMetricsParams(metrics *job.Metrics, paramMap map[string]string) error {
 	// 1. JDBC
 	if metrics.JDBC != nil {
 		r.replaceJDBCParams(metrics.JDBC, paramMap)
@@ -159,7 +159,7 @@ func (r *Replacer) ReplaceMetricsParams(metrics *jobtypes.Metrics, paramMap map[
 }
 
 // replaceHTTPParams specific replacement logic for HTTPProtocol struct
-func (r *Replacer) replaceHTTPParams(http *protocol.HTTPProtocol, paramMap map[string]string) {
+func (r *Replacer) replaceHTTPParams(http *protocol2.HTTPProtocol, paramMap map[string]string) {
 	http.URL = r.replaceParamPlaceholders(http.URL, paramMap)
 	http.Method = r.replaceParamPlaceholders(http.Method, paramMap)
 	http.Body = r.replaceParamPlaceholders(http.Body, paramMap)
@@ -207,7 +207,7 @@ func (r *Replacer) replaceHTTPParams(http *protocol.HTTPProtocol, paramMap map[s
 }
 
 // replaceRedisParams specific replacement logic for RedisProtocol struct
-func (r *Replacer) replaceRedisParams(redis *protocol.RedisProtocol, paramMap map[string]string) {
+func (r *Replacer) replaceRedisParams(redis *protocol2.RedisProtocol, paramMap map[string]string) {
 	redis.Host = r.replaceParamPlaceholders(redis.Host, paramMap)
 	redis.Port = r.replaceParamPlaceholders(redis.Port, paramMap)
 	redis.Username = r.replaceParamPlaceholders(redis.Username, paramMap)
@@ -223,7 +223,7 @@ func (r *Replacer) replaceRedisParams(redis *protocol.RedisProtocol, paramMap ma
 }
 
 // replaceSSHParams specific replacement logic for SSHProtocol struct
-func (r *Replacer) replaceSSHParams(ssh *protocol.SSHProtocol, paramMap map[string]string) {
+func (r *Replacer) replaceSSHParams(ssh *protocol2.SSHProtocol, paramMap map[string]string) {
 	ssh.Host = r.replaceParamPlaceholders(ssh.Host, paramMap)
 	ssh.Port = r.replaceParamPlaceholders(ssh.Port, paramMap)
 	ssh.Username = r.replaceParamPlaceholders(ssh.Username, paramMap)
@@ -244,7 +244,7 @@ func (r *Replacer) replaceSSHParams(ssh *protocol.SSHProtocol, paramMap map[stri
 }
 
 // replaceJDBCParams specific replacement logic for JDBCProtocol struct
-func (r *Replacer) replaceJDBCParams(jdbc *protocol.JDBCProtocol, paramMap map[string]string) {
+func (r *Replacer) replaceJDBCParams(jdbc *protocol2.JDBCProtocol, paramMap map[string]string) {
 	jdbc.Host = r.replaceParamPlaceholders(jdbc.Host, paramMap)
 	jdbc.Port = r.replaceParamPlaceholders(jdbc.Port, paramMap)
 	jdbc.Platform = r.replaceParamPlaceholders(jdbc.Platform, paramMap)
@@ -265,7 +265,7 @@ func (r *Replacer) replaceJDBCParams(jdbc *protocol.JDBCProtocol, paramMap map[s
 }
 
 // replaceBasicMetricsParams replaces parameters in basic metrics fields
-func (r *Replacer) replaceBasicMetricsParams(metrics *jobtypes.Metrics, paramMap map[string]string) error {
+func (r *Replacer) replaceBasicMetricsParams(metrics *job.Metrics, paramMap map[string]string) error {
 	metrics.Host = r.replaceParamPlaceholders(metrics.Host, paramMap)
 	metrics.Port = r.replaceParamPlaceholders(metrics.Port, paramMap)
 	metrics.Timeout = r.replaceParamPlaceholders(metrics.Timeout, paramMap)
@@ -321,14 +321,14 @@ func (r *Replacer) ExtractProtocolConfig(protocolInterface interface{}, targetSt
 }
 
 // ExtractJDBCConfig extracts and processes JDBC configuration
-func (r *Replacer) ExtractJDBCConfig(jdbcInterface interface{}) (*protocol.JDBCProtocol, error) {
+func (r *Replacer) ExtractJDBCConfig(jdbcInterface interface{}) (*protocol2.JDBCProtocol, error) {
 	if jdbcInterface == nil {
 		return nil, nil
 	}
-	if jdbcConfig, ok := jdbcInterface.(*protocol.JDBCProtocol); ok {
+	if jdbcConfig, ok := jdbcInterface.(*protocol2.JDBCProtocol); ok {
 		return jdbcConfig, nil
 	}
-	var jdbcConfig protocol.JDBCProtocol
+	var jdbcConfig protocol2.JDBCProtocol
 	if err := r.ExtractProtocolConfig(jdbcInterface, &jdbcConfig); err != nil {
 		return nil, fmt.Errorf("failed to extract JDBC config: %w", err)
 	}
@@ -336,14 +336,14 @@ func (r *Replacer) ExtractJDBCConfig(jdbcInterface interface{}) (*protocol.JDBCP
 }
 
 // ExtractHTTPConfig extracts and processes HTTP configuration
-func (r *Replacer) ExtractHTTPConfig(httpInterface interface{}) (*protocol.HTTPProtocol, error) {
+func (r *Replacer) ExtractHTTPConfig(httpInterface interface{}) (*protocol2.HTTPProtocol, error) {
 	if httpInterface == nil {
 		return nil, nil
 	}
-	if httpConfig, ok := httpInterface.(*protocol.HTTPProtocol); ok {
+	if httpConfig, ok := httpInterface.(*protocol2.HTTPProtocol); ok {
 		return httpConfig, nil
 	}
-	var httpConfig protocol.HTTPProtocol
+	var httpConfig protocol2.HTTPProtocol
 	if err := r.ExtractProtocolConfig(httpInterface, &httpConfig); err != nil {
 		return nil, fmt.Errorf("failed to extract HTTP config: %w", err)
 	}
@@ -351,14 +351,14 @@ func (r *Replacer) ExtractHTTPConfig(httpInterface interface{}) (*protocol.HTTPP
 }
 
 // ExtractSSHConfig extracts and processes SSH configuration
-func (r *Replacer) ExtractSSHConfig(sshInterface interface{}) (*protocol.SSHProtocol, error) {
+func (r *Replacer) ExtractSSHConfig(sshInterface interface{}) (*protocol2.SSHProtocol, error) {
 	if sshInterface == nil {
 		return nil, nil
 	}
-	if sshConfig, ok := sshInterface.(*protocol.SSHProtocol); ok {
+	if sshConfig, ok := sshInterface.(*protocol2.SSHProtocol); ok {
 		return sshConfig, nil
 	}
-	var sshConfig protocol.SSHProtocol
+	var sshConfig protocol2.SSHProtocol
 	if err := r.ExtractProtocolConfig(sshInterface, &sshConfig); err != nil {
 		return nil, fmt.Errorf("failed to extract SSH config: %w", err)
 	}

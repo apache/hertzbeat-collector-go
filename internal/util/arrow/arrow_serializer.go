@@ -24,7 +24,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
+	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 

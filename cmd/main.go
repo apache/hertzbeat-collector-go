@@ -18,17 +18,17 @@
 package main
 
 import (
-	"fmt"
-	"os"
+  "fmt"
+  "os"
 
-	"hertzbeat.apache.org/hertzbeat-collector-go/cmd/root"
-	_ "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/basic/standard"
+  "hertzbeat.apache.org/hertzbeat-collector-go/cmd/root"
+  _ "hertzbeat.apache.org/hertzbeat-collector-go/internal/protocol/standard"
 )
 
 func main() {
 
-	if err := root.GetRootCommand().Execute(); err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+  if err := root.GetRootCommand().Execute(); err != nil {
+    _, _ = fmt.Fprintln(os.Stderr, err)
+    os.Exit(1)
+  }
 }

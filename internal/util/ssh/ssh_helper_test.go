@@ -31,9 +31,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/ssh"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job/protocol"
+	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/logger"
 
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
-	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 

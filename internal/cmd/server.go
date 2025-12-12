@@ -28,16 +28,16 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
+	cfgloader "hertzbeat.apache.org/hertzbeat-collector-go/internal/config"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/job/collect"
+	jobserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/job/server"
+	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/server"
+	transportserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/transport"
+	collectortypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/collector"
+	configtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/config"
+	collectorerr "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/err"
 
 	bannerouter "hertzbeat.apache.org/hertzbeat-collector-go/internal/banner"
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/collect"
-	jobserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/job"
-	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
-	transportserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/transport"
-	collectortypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/collector"
-	configtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/config"
-	collectorerr "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/err"
-	cfgloader "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/config"
 )
 
 var (
