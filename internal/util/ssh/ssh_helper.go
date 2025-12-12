@@ -28,8 +28,8 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/ssh"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job/protocol"
 
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job/protocol"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 

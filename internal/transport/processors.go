@@ -25,8 +25,8 @@ import (
 	"time"
 
 	pb "hertzbeat.apache.org/hertzbeat-collector-go/api"
-	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/job"
-	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job"
+	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/crypto"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
