@@ -1,3 +1,4 @@
+
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,15 +16,18 @@
 # specific language governing permissions and limitations
 # under the License.
 
-_run:
-	@$(MAKE) --warn-undefined-variables \
-		-f tools/make/common.mk \
-		-f tools/make/golang.mk \
-		-f tools/make/linter.mk \
-		-f tools/make/tools.mk \
-		-f tools/make/image.mk \
-		$(MAKECMDGOALS)
+services:
 
-.PHONY: _run
+  # collector go service
+  hertzbeat-collector:
+    image: hertzbeat-collector-go:latest
+    container_name: hertzbeat-collector-go
+    restart: on-failure
+    ports:
+      - "8080:8080"
+    networks:
+      hcg-network:
 
-$(if $(MAKECMDGOALS),$(MAKECMDGOALS): %: _run)
+networks:
+  hcg-network:
+    driver: bridge
