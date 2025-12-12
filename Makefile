@@ -21,6 +21,7 @@ _run:
 		-f tools/make/golang.mk \
 		-f tools/make/linter.mk \
 		-f tools/make/tools.mk \
+		-f tools/make/image.mk \
 		$(MAKECMDGOALS)
 
 .PHONY: _run

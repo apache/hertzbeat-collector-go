@@ -15,21 +15,21 @@
 # specific language governing permissions and limitations
 # under the License.
 
-collector:
-  info:
-    name: hertzbeat-collector-go
-    ip: 127.0.0.1
-    port: 8080
+FROM docker.io/library/busybox@sha256:ab33eacc8251e3807b85bb6dba570e4698c3998eca6f0fc2ccb60575a563ea74 AS builder
 
-  log:
-    level: info
+# prepare hertzbeat data dir
+RUN mkdir -p /var/hertzbeat
 
-  # Manager server configuration
-  manager:
-    host: 127.0.0.1
-    port: 1158
-    protocol: netty  # netty or grpc
+# Use distroless as minimal base image to package the manager binary
+# Refer to https://github.com/GoogleContainerTools/distroless for more details
+FROM gcr.io/distroless/base-nossl:nonroot@sha256:8981b63f968e829d21351ea9d28cc21127e5f034707f1d8483d2993d9577be0b
 
-  # Collector identity and mode
-  identity: hertzbeat-collector-go
-  mode: public  # public or private
+COPY --from=builder /var/hertzbeat/ /var/hertzbeat/
+
+# copy binary to image, run make build to generate binary.
+COPY bin /usr/local/bin/
+COPY etc /var/hertzbeat/config/
+
+USER 65532:65532
+
+ENTRYPOINT ["/usr/local/bin/collector", "server", "--config", "/var/hertzbeat/config/hertzbeat-collector.yaml"]
