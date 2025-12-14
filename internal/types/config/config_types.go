@@ -25,23 +25,24 @@ type CollectorSection struct {
 	Info     CollectorInfo      `yaml:"info"`
 	Log      CollectorLogConfig `yaml:"log"`
 	Manager  ManagerConfig      `yaml:"manager"`
-	Identity string             `yaml:"identity" env:"IDENTITY"`
-	Mode     string             `yaml:"mode" env:"MODE"`
-	// Add Dispatcher if needed
+	Identity string             `yaml:"identity"`
+	Mode     string             `yaml:"mode"`
+	// todo dispatcher
 }
 
 type CollectorInfo struct {
-	Name string `yaml:"name"`
 	IP   string `yaml:"ip"`
+	Name string `yaml:"name"`
 	Port string `yaml:"port"`
 }
 
 type CollectorLogConfig struct {
+	// Level is one of: debug, info, warn, error, panic, panic, fatal
 	Level string `yaml:"level"`
 }
 
 type ManagerConfig struct {
-	Host     string `yaml:"host" env:"MANAGER_HOST"`
-	Port     string `yaml:"port" env:"MANAGER_PORT"`
-	Protocol string `yaml:"protocol" env:"MANAGER_PROTOCOL"`
+	Host     string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Protocol string `yaml:"protocol"`
 }

@@ -19,72 +19,76 @@
 // ported from org.apache.hertzbeat.common.constants.CommonConstants
 package constants
 
+const (
+  DefaultHertzBeatCollectorName = "hertzbeat-collector"
+)
+
 // Collect Response status code (Go Collector specific)
 const (
-	CollectSuccess       = 0 // Generic success
-	CollectUnavailable   = 1 // Service unavailable (e.g., target service error)
-	CollectUnReachable   = 2 // Network unreachable (e.g., network timeout, DNS fail)
-	CollectUnConnectable = 3 // Connection failed (e.g., port closed, SSH auth fail)
-	CollectFail          = 4 // Generic failure (e.g., query error, script exec fail)
-	CollectTimeout       = 5 // Collection timeout
+  CollectSuccess       = 0 // Generic success
+  CollectUnavailable   = 1 // Service unavailable (e.g., target service error)
+  CollectUnReachable   = 2 // Network unreachable (e.g., network timeout, DNS fail)
+  CollectUnConnectable = 3 // Connection failed (e.g., port closed, SSH auth fail)
+  CollectFail          = 4 // Generic failure (e.g., query error, script exec fail)
+  CollectTimeout       = 5 // Collection timeout
 )
 
 // Field parameter types (Aligned with CommonConstants.java)
 const (
-	TYPE_NUMBER = 0 // Field parameter type: number
-	TYPE_STRING = 1 // Field parameter type: String
-	TYPE_SECRET = 2 // Field parameter type: encrypted string
-	TYPE_TIME   = 3 // Field parameter type: time
+  TYPE_NUMBER = 0 // Field parameter type: number
+  TYPE_STRING = 1 // Field parameter type: String
+  TYPE_SECRET = 2 // Field parameter type: encrypted string
+  TYPE_TIME   = 3 // Field parameter type: time
 )
 
 // Monitoring status (Aligned with CommonConstants.java)
 const (
-	MONITOR_PAUSED_CODE = 0 // 0: Paused
-	MONITOR_UP_CODE     = 1 // 1: Up
-	MONITOR_DOWN_CODE   = 2 // 2: Down
+  MONITOR_PAUSED_CODE = 0 // 0: Paused
+  MONITOR_UP_CODE     = 1 // 1: Up
+  MONITOR_DOWN_CODE   = 2 // 2: Down
 )
 
 // Common metric/label keys
 const (
-	// Collection metric value: null placeholder for empty value
-	NULL_VALUE = "&nbsp;"
+  // Collection metric value: null placeholder for empty value
+  NULL_VALUE = "&nbsp;"
 
-	// Common metric keys
-	ErrorMsg      = "errorMsg"
-	RESPONSE_TIME = "responseTime"
-	StatusCode    = "statusCode"
+  // Common metric keys
+  ErrorMsg      = "errorMsg"
+  RESPONSE_TIME = "responseTime"
+  StatusCode    = "statusCode"
 
-	// Label keys (Aligned with CommonConstants.java)
-	LABEL_INSTANCE       = "instance"
-	LABEL_DEFINE_ID      = "defineid"
-	LABEL_ALERT_NAME     = "alertname"
-	LABEL_INSTANCE_HOST  = "instancehost"
-	LABEL_INSTANCE_NAME  = "instancename"
-	LABEL_ALERT_SEVERITY = "severity"
+  // Label keys (Aligned with CommonConstants.java)
+  LABEL_INSTANCE       = "instance"
+  LABEL_DEFINE_ID      = "defineid"
+  LABEL_ALERT_NAME     = "alertname"
+  LABEL_INSTANCE_HOST  = "instancehost"
+  LABEL_INSTANCE_NAME  = "instancename"
+  LABEL_ALERT_SEVERITY = "severity"
 )
 
 // Service specific constants
 const (
-	MongoDbAtlasModel = "mongodb-atlas"
+  MongoDbAtlasModel = "mongodb-atlas"
 
-	// PostgreSQLUnReachAbleCode Specific SQLState for connection failure
-	PostgreSQLUnReachAbleCode = "08001"
-	// ZookeeperApp App name for Zookeeper
-	ZookeeperApp = "zookeeper"
-	// ZookeeperEnviHeader Header string in Zookeeper 'envi' command output
-	ZookeeperEnviHeader = "Environment:"
+  // PostgreSQLUnReachAbleCode Specific SQLState for connection failure
+  PostgreSQLUnReachAbleCode = "08001"
+  // ZookeeperApp App name for Zookeeper
+  ZookeeperApp = "zookeeper"
+  // ZookeeperEnviHeader Header string in Zookeeper 'envi' command output
+  ZookeeperEnviHeader = "Environment:"
 )
 
 // Function related constants
 const (
-	CollectorModule = "collector"
+  CollectorModule = "collector"
 )
 
 // Legacy or alias constants
 // These are kept for compatibility with previous Go code logic
 const (
-	// FieldTypeString Alias for TYPE_STRING
-	FieldTypeString = TYPE_STRING
-	// KeyWord Deprecated placeholder
-	KeyWord = "keyword"
+  // FieldTypeString Alias for TYPE_STRING
+  FieldTypeString = TYPE_STRING
+  // KeyWord Deprecated placeholder
+  KeyWord = "keyword"
 )

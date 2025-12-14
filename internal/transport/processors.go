@@ -26,7 +26,7 @@ import (
 
 	pb "hertzbeat.apache.org/hertzbeat-collector-go/api"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job"
-	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/logger"
+	loggertypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/crypto"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
@@ -87,7 +87,7 @@ func NewGoOnlineProcessor(client *GrpcClient) *GoOnlineProcessor {
 }
 
 func (p *GoOnlineProcessor) Process(msg *pb.Message) (*pb.Message, error) {
-	log := logger.DefaultLogger(os.Stdout, loggertype.LogLevelInfo).WithName("go-online-processor")
+	log := logger.DefaultLogger(os.Stdout, loggertypes.LogLevelInfo).WithName("go-online-processor")
 
 	// Handle go online message - parse ServerInfo and extract AES secret
 	log.Info("received GO_ONLINE message from manager")
@@ -188,7 +188,7 @@ func NewCollectCyclicDataProcessor(client *GrpcClient, scheduler JobScheduler) *
 }
 
 func (p *CollectCyclicDataProcessor) Process(msg *pb.Message) (*pb.Message, error) {
-	log := logger.DefaultLogger(os.Stdout, loggertype.LogLevelInfo).WithName("cyclic-task-processor")
+	log := logger.DefaultLogger(os.Stdout, loggertypes.LogLevelInfo).WithName("cyclic-task-processor")
 	log.Info("processing cyclic task message", "identity", msg.Identity)
 
 	if p.scheduler == nil {
@@ -229,7 +229,7 @@ func (p *CollectCyclicDataProcessor) Process(msg *pb.Message) (*pb.Message, erro
 		"monitorID", job.MonitorID,
 		"app", job.App)
 
-	// Add job to scheduler
+	// Add job to scheduler - convert to interface{} for compatibility
 	if err := p.scheduler.AddAsyncCollectJob(&job); err != nil {
 		log.Error(err, "Failed to add cyclic job to scheduler: %v")
 		return &pb.Message{
