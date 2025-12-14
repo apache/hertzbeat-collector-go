@@ -24,8 +24,8 @@ import (
 	"strconv"
 	"text/template"
 
-	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/server"
-	bannertypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/err"
+	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/server"
+	bannertypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/err"
 )
 
 const (

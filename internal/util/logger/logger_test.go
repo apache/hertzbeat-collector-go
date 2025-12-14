@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/collector/common/types/logger"
+	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/logger"
 )
 
 func TestZapLogLevel(t *testing.T) {
