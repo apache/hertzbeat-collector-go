@@ -22,7 +22,7 @@ collector:
     port: 8080
 
   log:
-    level: debug
+    level: info
 
   # Transport/Manager configuration
   manager:

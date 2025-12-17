@@ -434,27 +434,28 @@ func (c *NettyClient) connectionMonitor() {
 		if !connExists {
 			// Connection is nil, trigger disconnect event
 			c.triggerEvent(EventDisconnected, nil)
-			log.Println("Connection lost, attempting to reconnect...")
+			log.Println("Connection lost, starting reconnection loop...")
 			_ = c.Shutdown()
 
-			// Attempt to reconnect with exponential backoff
-			for i := 0; i < 5; i++ {
+			// Attempt to reconnect continuously with fixed 3-second interval
+			attempt := 0
+			for c.IsStarted() {
+				attempt++
+				log.Printf("Reconnection attempt #%d, will retry in 3 seconds...", attempt)
+				time.Sleep(3 * time.Second)
+
 				if !c.IsStarted() {
-					break // Exit if shutdown was called
+					log.Println("Client shutdown requested, stopping reconnection attempts")
+					break
 				}
 
-				backoff := time.Duration(i+1) * 2 * time.Second
-				log.Printf("Attempting to reconnect in %v...", backoff)
-				time.Sleep(backoff)
-
+				log.Printf("Reconnection attempt #%d: trying to connect to %s...", attempt, c.addr)
 				if err := c.Start(); err == nil {
-					log.Println("Reconnected successfully")
+					log.Printf("Reconnection attempt #%d: SUCCESS - Connected to manager", attempt)
 					break
 				} else {
-					log.Printf("Failed to reconnect: %v", err)
-					if i == 4 { // Last attempt
-						c.triggerEvent(EventConnectFailed, err)
-					}
+					log.Printf("Reconnection attempt #%d: FAILED - %v", attempt, err)
+					c.triggerEvent(EventConnectFailed, err)
 				}
 			}
 		}

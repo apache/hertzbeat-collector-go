@@ -18,110 +18,290 @@
 package config
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
+	"sync"
+	"sync/atomic"
+	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"gopkg.in/yaml.v3"
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/types/config"
+
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
+	cfgtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/config"
 	collectortypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/err"
 	loggertypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/logger"
-
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
-const (
-	DefaultHertzBeatCollectorName = "hertzbeat-collector"
+var (
+	globalConfig atomic.Pointer[cfgtypes.CollectorConfig]
+	configMu     sync.RWMutex
 )
 
-// Loader handles file-based configuration loading
-// It uses the common ConfigFactory for consistency
+// Loader handles file-based configuration loading with hot-reload support
 type Loader struct {
 	cfgPath string
-	factory *ConfigFactory
 	logger  logger.Logger
 }
 
+// New creates a new configuration loader
 func New(cfgPath string) *Loader {
+
 	return &Loader{
 		cfgPath: cfgPath,
-		factory: NewConfigFactory(),
+		logger:  logger.DefaultLogger(os.Stdout, loggertypes.LogLevelInfo).WithName("config-loader"),
 	}
 }
 
-func (l *Loader) LoadConfig() (*config.CollectorConfig, error) {
-	l.logger = logger.DefaultLogger(os.Stdout, loggertypes.LogLevelInfo).WithName("config-loader")
-
+// LoadConfig loads configuration from file
+func (l *Loader) LoadConfig() (*cfgtypes.CollectorConfig, error) {
 	if l.cfgPath == "" {
-		l.logger.Info("file-config-loader: path is empty, using defaults")
-		return l.factory.CreateDefaultConfig(), nil
-	}
-
-	if _, err := os.Stat(l.cfgPath); os.IsNotExist(err) {
-		l.logger.Error(err, "file-config-loader: file not exist", "path", l.cfgPath)
+		err := errors.New("config path is required")
+		l.logger.Error(err, "config path is empty")
 		return nil, err
 	}
 
-	file, err := os.Open(l.cfgPath)
+	cfg, err := l.parseConfigFile(l.cfgPath)
 	if err != nil {
 		return nil, err
 	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			l.logger.Error(err, "close config file failed")
-		}
-	}(file)
 
-	var cfg config.CollectorConfig
-	decoder := yaml.NewDecoder(file)
-	if err := decoder.Decode(&cfg); err != nil {
-		l.logger.Error(err, "decode config file failed")
+	l.logger.Info("configuration loaded successfully", "path", l.cfgPath)
+	return cfg, nil
+}
+
+// parseConfigFile parses the YAML config file
+func (l *Loader) parseConfigFile(path string) (*cfgtypes.CollectorConfig, error) {
+	// Resolve symlinks to handle Kubernetes ConfigMap mounts
+	resolved, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		resolved = path
+	}
+
+	if _, err := os.Stat(resolved); os.IsNotExist(err) {
+		l.logger.Error(err, "config file not exist", "path", resolved)
 		return nil, err
 	}
 
-	// Fill in any missing fields with defaults
-	filledCfg := l.factory.MergeWithEnv(&cfg)
+	data, err := os.ReadFile(resolved)
+	if err != nil {
+		l.logger.Error(err, "failed to read config file", "path", resolved)
+		return nil, err
+	}
 
-	l.logger.Info("Configuration loaded from file", "path", l.cfgPath)
-	return filledCfg, nil
+	var cfg cfgtypes.CollectorConfig
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		l.logger.Error(err, "failed to parse config file", "path", resolved)
+		return nil, err
+	}
+
+	// Apply default values
+	// when some fields are missing in config file
+	l.applyDefaults(&cfg)
+
+	return &cfg, nil
 }
 
-func (l *Loader) ValidateConfig(cfg *config.CollectorConfig) error {
-	if l.factory != nil {
-		return l.factory.ValidateConfig(cfg)
+// applyDefaults fills in missing configuration with defaults
+func (l *Loader) applyDefaults(cfg *cfgtypes.CollectorConfig) {
+	if cfg.Collector.Info.Name == "" {
+		cfg.Collector.Info.Name = constants.DefaultHertzBeatCollectorName
 	}
+	if cfg.Collector.Log.Level == "" {
+		cfg.Collector.Log.Level = string(loggertypes.LogLevelInfo)
+	}
+	if cfg.Collector.Manager.Protocol == "" {
+		cfg.Collector.Manager.Protocol = "http"
+	}
+}
 
-	// Fallback validation if factory is not available
+// ValidateConfig validates the configuration
+func (l *Loader) ValidateConfig(cfg *cfgtypes.CollectorConfig) error {
 	if cfg == nil {
-		l.logger.Error(collectortypes.CollectorConfigIsNil, "config-loader is nil")
-		return errors.New("config-loader is nil")
+		err := errors.New("config is nil")
+		l.logger.Error(collectortypes.CollectorConfigIsNil, "config validation failed")
+		return err
 	}
 
-	// other check
 	if cfg.Collector.Info.IP == "" {
-		l.logger.Error(collectortypes.CollectorIPIsNil, "collector ip is empty")
-		return errors.New("config-loader ip is empty")
+		err := errors.New("collector ip is empty")
+		l.logger.Error(collectortypes.CollectorIPIsNil, "config validation failed")
+		return err
 	}
 
 	if cfg.Collector.Info.Port == "" {
-		l.logger.Error(collectortypes.CollectorPortIsNil, "config-loader: port is empty")
-		return errors.New("config-loader port is empty")
+		err := errors.New("collector port is empty")
+		l.logger.Error(collectortypes.CollectorPortIsNil, "config validation failed")
+		return err
 	}
 
 	if cfg.Collector.Info.Name == "" {
-		l.logger.Sugar().Debug("config-loader: name is empty")
-		cfg.Collector.Info.Name = DefaultHertzBeatCollectorName
+		cfg.Collector.Info.Name = constants.DefaultHertzBeatCollectorName
+		l.logger.Sugar().Debug("collector name is empty, using default")
 	}
 
 	return nil
 }
 
-// GetManagerAddress returns the full manager address using the factory
-func (l *Loader) GetManagerAddress(cfg *config.CollectorConfig) string {
-	return l.factory.GetManagerAddress(cfg)
+// GetManagerAddress returns the full manager address
+func (l *Loader) GetManagerAddress(cfg *cfgtypes.CollectorConfig) string {
+	if cfg == nil || cfg.Collector.Manager.Host == "" {
+		return ""
+	}
+	protocol := cfg.Collector.Manager.Protocol
+	if protocol == "" {
+		protocol = "http"
+	}
+	return fmt.Sprintf("%s://%s:%s", protocol, cfg.Collector.Manager.Host, cfg.Collector.Manager.Port)
 }
 
-// PrintConfig prints the configuration using the factory
-func (l *Loader) PrintConfig(cfg *config.CollectorConfig) {
-	l.factory.PrintConfig(cfg)
+// PrintConfig prints the configuration
+func (l *Loader) PrintConfig(cfg *cfgtypes.CollectorConfig) {
+	if cfg == nil {
+		l.logger.Info("config is nil")
+		return
+	}
+	l.logger.Info("current configuration",
+		"name", cfg.Collector.Info.Name,
+		"ip", cfg.Collector.Info.IP,
+		"port", cfg.Collector.Info.Port,
+		"log_level", cfg.Collector.Log.Level,
+		"manager", l.GetManagerAddress(cfg),
+	)
+}
+
+// GetGlobalConfig returns the current global configuration
+func GetGlobalConfig() *cfgtypes.CollectorConfig {
+	return globalConfig.Load()
+}
+
+// SetGlobalConfig sets the global configuration
+func SetGlobalConfig(cfg *cfgtypes.CollectorConfig) {
+	configMu.Lock()
+	defer configMu.Unlock()
+	globalConfig.Store(cfg)
+}
+
+// WatchConfigAndReload watches the config file and reloads on changes
+// This function implements hot-reload for both configuration and logging
+func (l *Loader) WatchConfigAndReload(ctx context.Context) error {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		l.logger.Error(err, "failed to create config watcher")
+		return err
+	}
+	defer watcher.Close()
+
+	// Watch both the file and its directory to handle symlink swaps (Kubernetes ConfigMap)
+	cfgFile := l.cfgPath
+	cfgDir := filepath.Dir(cfgFile)
+
+	if err := watcher.Add(cfgDir); err != nil {
+		l.logger.Error(err, "failed to watch config directory", "dir", cfgDir)
+		return err
+	}
+
+	// Try to watch the file directly (best-effort)
+	_ = watcher.Add(cfgFile)
+
+	l.logger.Info("config file watcher started", "path", cfgFile)
+
+	// Debounce events
+	var (
+		pending bool
+		last    time.Time
+	)
+
+	reload := func() {
+		l.logger.Info("config file changed, reloading...")
+
+		// Parse new configuration
+		newCfg, err := l.parseConfigFile(cfgFile)
+		if err != nil {
+			l.logger.Error(err, "failed to reload config")
+			return
+		}
+
+		// Validate new configuration
+		if err := l.ValidateConfig(newCfg); err != nil {
+			l.logger.Error(err, "invalid config after reload")
+			return
+		}
+
+		// Update global configuration
+		SetGlobalConfig(newCfg)
+
+		// Hot-reload logging configuration
+		if err := l.reloadLogging(newCfg); err != nil {
+			l.logger.Error(err, "failed to reload logging")
+		}
+
+		l.logger.Info("configuration reloaded successfully")
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			l.logger.Info("config watcher stopped")
+			return ctx.Err()
+
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return nil
+			}
+
+			// Handle Write, Create, Remove, Rename, Chmod events
+			if event.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Remove|fsnotify.Rename|fsnotify.Chmod) != 0 {
+				// Check if the event pertains to the config file or directory
+				if filepath.Base(event.Name) == filepath.Base(cfgFile) || filepath.Dir(event.Name) == cfgDir {
+					// Debounce: if not pending or enough time has passed
+					if !pending || time.Since(last) > 250*time.Millisecond {
+						pending = true
+						last = time.Now()
+						// Slight delay to let file settle
+						go func() {
+							time.Sleep(300 * time.Millisecond)
+							reload()
+							pending = false
+						}()
+					}
+				}
+			}
+
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return nil
+			}
+			l.logger.Error(err, "config watcher error")
+		}
+	}
+}
+
+// reloadLogging reloads the logging configuration
+// when config file changes, it helps dynamically
+// adjust the log level for dynamic debugging
+func (l *Loader) reloadLogging(cfg *cfgtypes.CollectorConfig) error {
+
+	if cfg == nil {
+		return errors.New("config is nil")
+	}
+
+	// Parse log level from config
+	level := loggertypes.LogLevel(cfg.Collector.Log.Level)
+	if level == "" {
+		level = loggertypes.LogLevelInfo
+	}
+
+	// Create new logger with updated level
+	newLogger := logger.DefaultLogger(os.Stdout, level).WithName("config-loader")
+
+	// Update loader's logger
+	l.logger = newLogger
+
+	l.logger.Info("logging configuration reloaded", "level", level)
+	return nil
 }
