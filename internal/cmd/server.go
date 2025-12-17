@@ -31,6 +31,7 @@ import (
 	cfgloader "hertzbeat.apache.org/hertzbeat-collector-go/internal/config"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/job/collect"
 	jobserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/job/server"
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/metrics"
 	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/server"
 	transportserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/transport"
 	collectortypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/collector"
@@ -109,13 +110,15 @@ func server(ctx context.Context, logOut io.Writer) error {
 }
 
 func startRunners(ctx context.Context, cfg *clrserver.Server) error {
+
 	// Create transport server first
-	transportRunner := transportserver.NewFromConfig(cfg.Config)
+	transportRunner := transportserver.New(cfg)
 
 	// Create lazy message router that can get transport client when needed
 	messageRouter := collect.NewLazyMessageRouter(transportRunner, cfg.Logger, cfg.Config.Collector.Identity)
 
 	// Create job server with message router
+	// todo optimize not depend server start!
 	jobRunner := jobserver.New(&jobserver.Config{
 		Server:        *cfg,
 		MessageRouter: messageRouter,
@@ -124,12 +127,15 @@ func startRunners(ctx context.Context, cfg *clrserver.Server) error {
 	// Connect transport to job scheduler
 	transportRunner.SetJobScheduler(jobRunner)
 
+	// Create metrics runner
+	metricsRunner := metrics.New(cfg)
+
 	runners := []struct {
 		runner Runner[collectortypes.Info]
 	}{
+		{metricsRunner},
 		{jobRunner},
 		{transportRunner},
-		// todo; add metrics
 	}
 
 	errCh := make(chan error, len(runners))

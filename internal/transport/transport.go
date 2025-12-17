@@ -27,8 +27,6 @@ import (
 	pb "hertzbeat.apache.org/hertzbeat-collector-go/api"
 	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/server"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/types/collector"
-	configtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/config"
-	loggertypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
@@ -44,18 +42,18 @@ const (
 )
 
 type Runner struct {
-	Config       *configtypes.CollectorConfig
 	client       TransportClient
 	jobScheduler JobScheduler
-	clrserver.Server
+	cfg          clrserver.Server
+	tlog         logger.Logger
 }
 
-func New(cfg *configtypes.CollectorConfig) *Runner {
+func New(cfg *clrserver.Server) *Runner {
+
 	return &Runner{
-		Config: cfg,
-		Server: clrserver.Server{
-			Logger: logger.Logger{}, // Will be initialized properly in Start method
-		},
+		cfg: *cfg,
+		// init logger
+		tlog: cfg.Logger.WithName("transport"),
 	}
 }
 
@@ -64,24 +62,12 @@ func (r *Runner) SetJobScheduler(scheduler JobScheduler) {
 	r.jobScheduler = scheduler
 }
 
-// NewFromConfig creates a new transport runner from collector configuration
-func NewFromConfig(cfg *configtypes.CollectorConfig) *Runner {
-	if cfg == nil {
-		return nil
-	}
-	return New(cfg)
-}
-
 func (r *Runner) Start(ctx context.Context) error {
-	// 初始化 Logger 如果它还没有被设置
-	if r.Logger.IsZero() {
-		r.Logger = logger.DefaultLogger(os.Stdout, loggertypes.LogLevelInfo)
-	}
-	r.Logger = r.Logger.WithName(r.Info().Name).WithValues("runner", r.Info().Name)
-	r.Logger.Info("Starting transport client")
+
+	r.tlog.Info("Starting transport client")
 
 	// 构建 server 地址
-	addr := fmt.Sprintf("%s:%s", r.Config.Collector.Manager.Host, r.Config.Collector.Manager.Port)
+	addr := fmt.Sprintf("%s:%s", r.cfg.Config.Collector.Manager.Host, r.cfg.Config.Collector.Manager.Port)
 	if addr == ":" {
 		// 如果配置为空，使用环境变量或默认值
 		if v := os.Getenv("MANAGER_ADDR"); v != "" {
@@ -92,7 +78,7 @@ func (r *Runner) Start(ctx context.Context) error {
 	}
 
 	// 确定协议
-	protocol := r.Config.Collector.Manager.Protocol
+	protocol := r.cfg.Config.Collector.Manager.Protocol
 	if protocol == "" {
 		if v := os.Getenv("MANAGER_PROTOCOL"); v != "" {
 			protocol = v
@@ -101,17 +87,17 @@ func (r *Runner) Start(ctx context.Context) error {
 		}
 	}
 
-	r.Logger.Info("Connecting to manager server", "addr", addr, "protocol", protocol)
+	r.tlog.Info("Connecting to manager server", "addr", addr, "protocol", protocol)
 
 	// 创建客户端
 	factory := &TransportClientFactory{}
 	client, err := factory.CreateClient(protocol, addr)
 	if err != nil {
-		r.Logger.Error(err, "Failed to create transport client, will retry in background")
+		r.tlog.Error(err, "Failed to create transport client, will retry in background")
 		// 不直接返回错误，而是继续启动，后续会在后台重试连接
 	} else {
 		// Set the identity on the client if it supports it
-		identity := r.Config.Collector.Identity
+		identity := r.cfg.Config.Collector.Identity
 		if identity == "" {
 			identity = DefaultIdentity
 		}
@@ -128,77 +114,77 @@ func (r *Runner) Start(ctx context.Context) error {
 			c.SetEventHandler(func(event Event) {
 				switch event.Type {
 				case EventConnected:
-					r.Logger.Info("Connected to manager gRPC server", "addr", event.Address)
+					r.tlog.Info("Connected to manager gRPC server", "addr", event.Address)
 					go r.sendOnlineMessage()
 				case EventDisconnected:
-					r.Logger.Info("Disconnected from manager gRPC server", "addr", event.Address)
+					r.tlog.Info("Disconnected from manager gRPC server", "addr", event.Address)
 				case EventConnectFailed:
-					r.Logger.Error(event.Error, "Failed to connect to manager gRPC server, will retry", "addr", event.Address)
+					r.tlog.Error(event.Error, "Failed to connect to manager gRPC server, will retry", "addr", event.Address)
 				}
 			})
 			// Register processors with job scheduler
 			if r.jobScheduler != nil {
 				RegisterDefaultProcessors(c, r.jobScheduler)
-				r.Logger.Info("Registered gRPC processors with job scheduler")
+				r.tlog.Info("Registered gRPC processors with job scheduler")
 			} else {
 				RegisterDefaultProcessors(c, nil)
-				r.Logger.Info("Registered gRPC processors without job scheduler")
+				r.tlog.Info("Registered gRPC processors without job scheduler")
 			}
 		case *NettyClient:
 			c.SetEventHandler(func(event Event) {
 				switch event.Type {
 				case EventConnected:
-					r.Logger.Info("Connected to manager netty server", "addr", event.Address)
+					r.tlog.Info("Connected to manager netty server", "addr", event.Address)
 					go r.sendOnlineMessage()
 				case EventDisconnected:
-					r.Logger.Info("Disconnected from manager netty server", "addr", event.Address)
+					r.tlog.Info("Disconnected from manager netty server", "addr", event.Address)
 				case EventConnectFailed:
-					r.Logger.Error(event.Error, "Failed to connect to manager netty server, will retry", "addr", event.Address)
+					r.tlog.Error(event.Error, "Failed to connect to manager netty server, will retry", "addr", event.Address)
 				}
 			})
 			// Register processors with job scheduler
 			if r.jobScheduler != nil {
 				RegisterDefaultNettyProcessors(c, r.jobScheduler)
-				r.Logger.Info("Registered netty processors with job scheduler")
+				r.tlog.Info("Registered netty processors with job scheduler")
 			} else {
 				RegisterDefaultNettyProcessors(c, nil)
-				r.Logger.Info("Registered netty processors without job scheduler")
+				r.tlog.Info("Registered netty processors without job scheduler")
 			}
 		}
 
 		// 尝试启动客户端，如果失败则启动重连循环
 		if err := r.client.Start(); err != nil {
-			r.Logger.Error(err, "Failed to start transport client on first attempt, starting retry loop")
+			r.tlog.Error(err, "Failed to start transport client on first attempt, starting retry loop")
 
 			// 在后台启动重连循环
 			go func() {
 				attempt := 0
 				for {
 					attempt++
-					r.Logger.Info("Reconnection attempt", "attempt", attempt, "wait", "3s")
+					r.tlog.Info("Reconnection attempt", "attempt", attempt, "wait", "3s")
 					time.Sleep(3 * time.Second)
 
 					// 检查是否应该停止
 					select {
 					case <-ctx.Done():
-						r.Logger.Info("Reconnection loop stopped due to context cancellation")
+						r.tlog.Info("Reconnection loop stopped due to context cancellation")
 						return
 					default:
 					}
 
-					r.Logger.Info("Trying to connect to manager", "attempt", attempt, "addr", addr)
+					r.tlog.Info("Trying to connect to manager", "attempt", attempt, "addr", addr)
 					if err := r.client.Start(); err == nil {
-						r.Logger.Info("Successfully connected to manager", "attempt", attempt)
+						r.tlog.Info("Successfully connected to manager", "attempt", attempt)
 						return
 					} else {
-						r.Logger.Error(err, "Connection failed, will retry", "attempt", attempt)
+						r.tlog.Error(err, "Connection failed, will retry", "attempt", attempt)
 					}
 				}
 			}()
 		}
 	}
 
-	r.Logger.Info("Transport runner started successfully, connection will be established in background")
+	r.tlog.Info("Transport runner started successfully, connection will be established in background")
 
 	// 创建新的context用于监控关闭信号
 	ctx, cancel := context.WithCancel(ctx)
@@ -207,7 +193,7 @@ func (r *Runner) Start(ctx context.Context) error {
 	// 监听 ctx.Done 优雅关闭
 	go func() {
 		<-ctx.Done()
-		r.Logger.Info("Shutting down transport client...")
+		r.tlog.Info("Shutting down transport client...")
 		if r.client != nil {
 			_ = r.client.Shutdown()
 		}
@@ -221,13 +207,13 @@ func (r *Runner) Start(ctx context.Context) error {
 func (r *Runner) sendOnlineMessage() {
 	if r.client != nil && r.client.IsStarted() {
 		// Use the configured identity
-		identity := r.Config.Collector.Identity
+		identity := r.cfg.Config.Collector.Identity
 		if identity == "" {
 			identity = DefaultIdentity
 		}
 
 		// Create CollectorInfo JSON structure as expected by Java server
-		mode := r.Config.Collector.Mode
+		mode := r.cfg.Config.Collector.Mode
 		if mode == "" {
 			mode = DefaultMode // Default mode as in Java version
 		}
@@ -242,7 +228,7 @@ func (r *Runner) sendOnlineMessage() {
 		// Convert to JSON bytes
 		jsonData, err := json.Marshal(collectorInfo)
 		if err != nil {
-			r.Logger.Error(err, "Failed to marshal collector info to JSON")
+			r.tlog.Error(err, "Failed to marshal collector info to JSON")
 			return
 		}
 
@@ -253,12 +239,12 @@ func (r *Runner) sendOnlineMessage() {
 			Msg:       jsonData,
 		}
 
-		r.Logger.Info("Sending online message", "identity", identity, "type", onlineMsg.Type)
+		r.tlog.Info("Sending online message", "identity", identity, "type", onlineMsg.Type)
 
 		if err := r.client.SendMsg(onlineMsg); err != nil {
-			r.Logger.Error(err, "Failed to send online message", "identity", identity)
+			r.tlog.Error(err, "Failed to send online message", "identity", identity)
 		} else {
-			r.Logger.Info("Online message sent successfully", "identity", identity)
+			r.tlog.Info("Online message sent successfully", "identity", identity)
 		}
 	}
 }
@@ -270,19 +256,23 @@ func (r *Runner) Info() collector.Info {
 }
 
 func (r *Runner) Close() error {
-	r.Logger.Info("transport close...")
+
+	r.tlog.Info("transport close...")
 	if r.client != nil {
 		_ = r.client.Shutdown()
 	}
+
 	return nil
 }
 
 // GetClient returns the transport client (for testing and advanced usage)
 func (r *Runner) GetClient() TransportClient {
+
 	return r.client
 }
 
 // IsConnected returns whether the client is connected and started
 func (r *Runner) IsConnected() bool {
+
 	return r.client != nil && r.client.IsStarted()
 }
