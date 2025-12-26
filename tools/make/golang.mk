@@ -32,15 +32,12 @@ fmt: ## Golang fmt
 vet: ## Golang vet
 	go vet ./...
 
-.PHONY: dev
-dev: ## Golang dev, run main by run.
+.PHONY: dev-run
+dev-run: ## Golang dev, run main by run.
 	go run cmd/main.go server --config etc/hertzbeat-collector.yaml
 
-.PHONY: run
-run: dev ## Golang dev, run main by run. Compatible with dev.
-
-.PHONY: prod
-prod: ## Golang prod, run bin by run.
+.PHONY: prod-run
+prod-run: ## Golang prod, run bin by run.
 	bin/collector server --config etc/hertzbeat-collector.yaml
 
 .PHONY: build
