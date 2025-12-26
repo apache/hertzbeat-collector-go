@@ -8,7 +8,7 @@ HertzBeat-Collector-Go 是 [Apache HertzBeat](https://github.com/apache/hertzbea
 ## 快速开始
 
 ```shell
-make run
+make dev-run
 ```
 
 ## 贡献
