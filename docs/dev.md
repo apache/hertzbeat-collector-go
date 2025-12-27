@@ -12,7 +12,7 @@ cd hertzbeat-postgresql-victoria-metrics
 docker compose up -d
 ```
 
-##  启动 Java Collector（如有需要）
+## 启动 Java Collector（如有需要）
 
 ```shell
 docker run -d \
