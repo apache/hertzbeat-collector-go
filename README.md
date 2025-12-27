@@ -8,7 +8,7 @@ HertzBeat-Collector-Go is the Go implementation of the collector for [Apache Her
 ## Quick Start
 
 ```shell
-make run
+make dev-run
 ```
 
 ## Contributing
