@@ -26,6 +26,7 @@ collector:
 
   # Transport/Manager configuration
   manager:
+    # Tips, replace the host & port with the actual manager service address
     host: 127.0.0.1
     port: 1158
     protocol: netty
