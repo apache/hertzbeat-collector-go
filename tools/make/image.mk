@@ -28,8 +28,7 @@ DOCKER_SUPPORTED_API_VERSION ?= 1.32
 
 IMAGES_DIR ?= $(wildcard tools/docker/hcg)
 
-IMAGES ?= hertzbeat-collector-go
-IMAGE_PLATFORMS ?= amd64 arm64
+IMAGES ?= apache/hertzbeat-collector-go
 
 BUILDX_CONTEXT = hcg-build-tools-builder
 
@@ -38,11 +37,12 @@ BUILDX_CONTEXT = hcg-build-tools-builder
 # todo: multi-platform build
 
 .PHONY: image-build
-image-build: ## Build docker image
-image-build: IMAGE_PLATFORMS = ${shell uname -m}
+image-build: ## Build docker image, support: make image-build IMAGE_PLATFORMS=arm64
+image-build: IMAGE_PLATFORMS ?= $(shell uname -m | head -n1 | awk '{print $$1}')
 image-build:
 	@$(LOG_TARGET)
-	make build
+	@echo "Building for platform: $(IMAGE_PLATFORMS)"
+	make build GOOS=linux GOARCH=$(IMAGE_PLATFORMS)
 	$(DOCKER) buildx create --name $(BUILDX_CONTEXT) --use; \
 	$(DOCKER) buildx use $(BUILDX_CONTEXT); \
 	$(DOCKER) buildx build --load \
