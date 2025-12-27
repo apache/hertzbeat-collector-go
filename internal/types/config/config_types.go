@@ -22,11 +22,12 @@ type CollectorConfig struct {
 }
 
 type CollectorSection struct {
-	Info     CollectorInfo      `yaml:"info"`
-	Log      CollectorLogConfig `yaml:"log"`
-	Manager  ManagerConfig      `yaml:"manager"`
-	Identity string             `yaml:"identity"`
-	Mode     string             `yaml:"mode"`
+	Info          CollectorInfo      `yaml:"info"`
+	Log           CollectorLogConfig `yaml:"log"`
+	Manager       ManagerConfig      `yaml:"manager"`
+	Identity      string             `yaml:"identity"`
+	Mode          string             `yaml:"mode"`
+	MetricsConfig MetricsConfig      `yaml:"metrics"`
 	// todo dispatcher
 }
 
@@ -45,4 +46,9 @@ type ManagerConfig struct {
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
 	Protocol string `yaml:"protocol"`
+}
+
+type MetricsConfig struct {
+	// Others?
+	Port int `yaml:"port"`
 }

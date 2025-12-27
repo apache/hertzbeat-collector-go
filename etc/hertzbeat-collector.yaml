@@ -33,3 +33,6 @@ collector:
   # Collector identity and mode
   identity: hertzbeat-collector-go
   mode: public
+
+  metrics:
+    port: 9090
