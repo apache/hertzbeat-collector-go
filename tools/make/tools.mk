@@ -39,7 +39,7 @@ tools: ## Install ci tools
 	go install github.com/apache/skywalking-eyes/cmd/license-eye@v0.6.1-0.20250110091440-69f34abb75ec
 
 	@echo "Installing golangci-lint"
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.4.0
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.8.0
 
 	@echo "Installing codespell"
 	pip install codespell
