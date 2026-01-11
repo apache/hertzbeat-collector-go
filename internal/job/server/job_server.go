@@ -166,16 +166,14 @@ func (r *Runner) Start(ctx context.Context) error {
 
 	r.Logger.Info("job service runner started successfully")
 
-	select {
-	case <-ctx.Done():
-		r.Logger.Info("job service runner stopped by context")
-		if r.TimeDispatch != nil {
-			if err := r.TimeDispatch.Stop(); err != nil {
-				r.Logger.Error(err, "error stopping time dispatcher")
-			}
+	<-ctx.Done()
+	r.Logger.Info("job service runner stopped by context")
+	if r.TimeDispatch != nil {
+		if err := r.TimeDispatch.Stop(); err != nil {
+			r.Logger.Error(err, "error stopping time dispatcher")
 		}
-		return nil
 	}
+	return nil
 }
 
 // Info returns runner information

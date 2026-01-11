@@ -35,7 +35,6 @@ type MilvusProtocol struct {
 type MilvusProtocolOption func(protocol *MilvusProtocol)
 
 func NewMilvusProtocol(host, port string, logger logger.Logger, opts ...MilvusProtocolOption) *MilvusProtocol {
-
 	p := &MilvusProtocol{
 		Host:   host,
 		Port:   port,

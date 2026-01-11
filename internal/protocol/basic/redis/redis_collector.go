@@ -30,11 +30,11 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/ssh"
+
+	consts "hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/job/collect/strategy"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job"
 	protocol2 "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job/protocol"
-
-	consts "hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 	sshhelper "hertzbeat.apache.org/hertzbeat-collector-go/internal/util/ssh"
 )
@@ -48,7 +48,7 @@ func init() {
 const (
 	ProtocolRedis  = "redis"
 	ResponseTime   = "responseTime"
-	NullValue      = consts.NULL_VALUE
+	NullValue      = consts.NullValue
 	ClusterPattern = "3"
 	ClusterInfo    = "cluster"
 	Identity       = "identity"

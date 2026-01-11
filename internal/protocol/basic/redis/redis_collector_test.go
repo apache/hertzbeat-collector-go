@@ -26,6 +26,7 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/stretchr/testify/assert"
+
 	consts "hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job/protocol"

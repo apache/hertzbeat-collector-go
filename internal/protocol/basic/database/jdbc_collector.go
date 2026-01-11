@@ -21,6 +21,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -38,11 +39,11 @@ import (
 	_ "github.com/microsoft/go-mssqldb"
 	_ "github.com/sijms/go-ora/v2"
 	"golang.org/x/crypto/ssh"
+
+	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/job/collect/strategy"
 	jobtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job"
 	protocol2 "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job/protocol"
-
-	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/param"
 )
@@ -196,7 +197,7 @@ func startSSHTunnel(config *protocol2.SSHTunnel, remoteHost, remotePort string, 
 	sshHost := config.Host
 	sshPort, err := strconv.Atoi(config.Port)
 	if err != nil {
-		return nil, "", "", fmt.Errorf("invalid SSH port: %v", err)
+		return nil, "", "", fmt.Errorf("invalid SSH port: %w", err)
 	}
 	sshUser := config.Username
 	sshPassword := config.Password
@@ -281,18 +282,12 @@ func (t *sshTunnelHelper) forwardConnection(localConn net.Conn, remoteAddr strin
 
 	// 4. Bidirectionally copy data
 	go func() {
-		_, err := io.Copy(remoteConn, localConn)
-		if err != nil && err != io.EOF {
-			// t.logger.V(1).Error(err, "error copying local to remote")
-		}
+		_, _ = io.Copy(remoteConn, localConn)
 		remoteConn.Close()
 		localConn.Close()
 	}()
 	go func() {
-		_, err := io.Copy(localConn, remoteConn)
-		if err != nil && err != io.EOF {
-			// t.logger.V(1).Error(err, "error copying remote to local")
-		}
+		_, _ = io.Copy(localConn, remoteConn)
 		remoteConn.Close()
 		localConn.Close()
 	}()
@@ -488,12 +483,14 @@ func (jc *JDBCCollector) Collect(metrics *jobtypes.Metrics) *jobtypes.CollectRep
 	if err != nil {
 		jc.logger.Error(err, "query execution failed", "queryType", jdbcConfig.QueryType)
 		// Check for specific errors
-		if pqErr, ok := err.(*pq.Error); ok {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
 			if pqErr.Code == pqUnreachableCode {
 				return jc.createFailResponse(metrics, CodeUnReachable, fmt.Sprintf("Query error: %v (Code: %s)", err, pqErr.Code))
 			}
 		}
-		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+		var netErr net.Error
+		if errors.As(err, &netErr) && netErr.Timeout() {
 			return jc.createFailResponse(metrics, CodeUnReachable, fmt.Sprintf("Query timeout: %v", err))
 		}
 		return jc.createFailResponse(metrics, CodeFail, fmt.Sprintf("Query error: %v", err))
@@ -549,25 +546,25 @@ func recursiveDecode(s string) (string, error) {
 }
 
 // validateURL performs strict URL security validation
-func validateURL(rawURL string, platform string) error {
+func validateURL(rawURL, platform string) error {
 	// 1. Length limit
 	if len(rawURL) > 2048 {
 		return fmt.Errorf("JDBC URL length exceeds maximum limit of 2048 characters")
 	}
 
 	// 2. Clean invisible characters
-	cleanedUrl := invalidCharRegex.ReplaceAllString(rawURL, "")
+	cleanedURL := invalidCharRegex.ReplaceAllString(rawURL, "")
 
 	// 3. Recursive decoding
-	decodedUrl, err := recursiveDecode(cleanedUrl)
+	decodedURL, err := recursiveDecode(cleanedURL)
 	if err != nil {
 		// We can't use jc.logger here as it's a static function
 		// log.Printf("URL decoding error: %v", err)
 		// Continue checking with the pre-decoded string even if decoding fails
-		decodedUrl = cleanedUrl
+		decodedURL = cleanedURL
 	}
 
-	urlLowerCase := strings.ToLower(decodedUrl)
+	urlLowerCase := strings.ToLower(decodedURL)
 
 	// 4. Check VULNERABLE_KEYWORDS
 	for _, keyword := range vulnerableKeywords {
@@ -703,36 +700,6 @@ func (jc *JDBCCollector) getConnection(ctx context.Context, databaseURL string, 
 	return db, nil
 }
 
-// convertRowValues converts raw database values (interface{}) to a string slice
-// Deprecated: Using sql.NullString is preferred.
-func (jc *JDBCCollector) convertRowValues(rawValues []interface{}, columns []sql.NullString) []string {
-	stringValues := make([]string, len(rawValues))
-	for i, rawValue := range rawValues {
-		if rawValue == nil {
-			stringValues[i] = constants.NULL_VALUE // Use "NULL" defined in Java version
-			continue
-		}
-
-		// Try using NullString (although Scan already handled it)
-		if columns[i].Valid {
-			stringValues[i] = columns[i].String
-		} else if rawValue != nil {
-			// Fallback to fmt.Sprintf
-			switch v := rawValue.(type) {
-			case []byte:
-				stringValues[i] = string(v) // Handle byte arrays
-			case time.Time:
-				stringValues[i] = v.Format(time.RFC3339) // Unify time format
-			default:
-				stringValues[i] = fmt.Sprintf("%v", v)
-			}
-		} else {
-			stringValues[i] = constants.NULL_VALUE
-		}
-	}
-	return stringValues
-}
-
 // queryOneRow executes a query and returns only the first row
 func (jc *JDBCCollector) queryOneRow(ctx context.Context, db *sql.DB, sqlQuery string, aliasFields []string, response *jobtypes.CollectRepMetricsData) error {
 	// Java version uses setMaxRows(1), which Go's standard library doesn't support.
@@ -771,7 +738,7 @@ func (jc *JDBCCollector) queryOneRow(ctx context.Context, db *sql.DB, sqlQuery s
 			if sv.Valid {
 				stringValues[i] = sv.String
 			} else {
-				stringValues[i] = constants.NULL_VALUE
+				stringValues[i] = constants.NullValue
 			}
 		}
 
@@ -818,7 +785,7 @@ func (jc *JDBCCollector) queryMultiRow(ctx context.Context, db *sql.DB, sqlQuery
 			if sv.Valid {
 				stringValues[i] = sv.String
 			} else {
-				stringValues[i] = constants.NULL_VALUE
+				stringValues[i] = constants.NullValue
 			}
 		}
 
@@ -879,7 +846,7 @@ func (jc *JDBCCollector) queryColumns(ctx context.Context, db *sql.DB, sqlQuery 
 			if value.Valid {
 				keyValueMap[keyString] = value.String
 			} else {
-				keyValueMap[keyString] = constants.NULL_VALUE
+				keyValueMap[keyString] = constants.NullValue
 			}
 		}
 	}
@@ -897,11 +864,11 @@ func (jc *JDBCCollector) queryColumns(ctx context.Context, db *sql.DB, sqlQuery 
 			valueRow.Columns[i] = value
 		} else {
 			// Check if it's response_time
-			if fieldName == constants.RESPONSE_TIME {
+			if fieldName == constants.ResponseTime {
 				// This value will be populated at the end of Collect by addResponseTime
 				valueRow.Columns[i] = "0"
 			} else {
-				valueRow.Columns[i] = constants.NULL_VALUE
+				valueRow.Columns[i] = constants.NullValue
 			}
 		}
 	}
@@ -952,7 +919,7 @@ func (jc *JDBCCollector) buildFields(response *jobtypes.CollectRepMetricsData, a
 	for i, fieldName := range fieldNames {
 		response.Fields[i] = jobtypes.Field{
 			Field:    fieldName,
-			Type:     constants.TYPE_STRING,
+			Type:     constants.TypeString,
 			Label:    false,
 			Unit:     "",
 			Instance: i == 0, // Default first as instance
@@ -965,7 +932,7 @@ func (jc *JDBCCollector) buildFields(response *jobtypes.CollectRepMetricsData, a
 func (jc *JDBCCollector) addResponseTime(response *jobtypes.CollectRepMetricsData, aliasFields []string, duration time.Duration) {
 	rtIndex := -1
 	for i, field := range aliasFields {
-		if field == constants.RESPONSE_TIME {
+		if field == constants.ResponseTime {
 			rtIndex = i
 			break
 		}

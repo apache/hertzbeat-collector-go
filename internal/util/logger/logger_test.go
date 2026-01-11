@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
 	loggertype "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/logger"
 )
 

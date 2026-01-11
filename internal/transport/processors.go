@@ -144,7 +144,7 @@ func (p *GoOfflineProcessor) Process(msg *pb.Message) (*pb.Message, error) {
 		go func() {
 			time.Sleep(100 * time.Millisecond) // Brief delay to ensure response is sent
 			log.Printf("Shutting down client as requested by manager")
-			p.client.Shutdown()
+			_ = p.client.Shutdown()
 		}()
 	}
 
@@ -164,7 +164,7 @@ func (p *GoCloseProcessor) Process(msg *pb.Message) (*pb.Message, error) {
 	// Handle go close message
 	// Shutdown the client after receiving close message
 	if p.client != nil {
-		p.client.Shutdown()
+		_ = p.client.Shutdown()
 	}
 	return &pb.Message{
 		Type:      pb.MessageType_GO_CLOSE,

@@ -70,7 +70,6 @@ func TestAESUtil_AesDecodeWithKey_Success(t *testing.T) {
 	validBase64 := "AAAAAAAAAAAAAAAAAAAAAA==" // 16 bytes of zeros, base64 encoded
 
 	_, err := util.AesDecodeWithKey(validBase64, key)
-
 	// Should not fail due to key or base64 issues, but will fail due to invalid encrypted data
 	// The important thing is that the function processes the inputs correctly
 	if err != nil {
@@ -118,7 +117,6 @@ func TestAESUtil_AesDecode_Success(t *testing.T) {
 	validBase64 := "AAAAAAAAAAAAAAAAAAAAAA==" // 16 bytes of zeros, base64 encoded
 
 	_, err := util.AesDecode(validBase64)
-
 	// Should not fail due to missing secret key
 	if err != nil {
 		assert.NotContains(t, err.Error(), "AES secret key not set")
@@ -169,7 +167,6 @@ func TestConvenienceFunctions(t *testing.T) {
 	// Test AesDecode with valid base64 but invalid encrypted data
 	validBase64 := "AAAAAAAAAAAAAAAAAAAAAA==" // 16 bytes of zeros, base64 encoded
 	_, err := AesDecode(validBase64)
-
 	// Should not fail due to missing secret key
 	if err != nil {
 		assert.NotContains(t, err.Error(), "AES secret key not set")

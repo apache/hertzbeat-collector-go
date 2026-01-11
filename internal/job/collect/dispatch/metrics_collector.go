@@ -82,7 +82,7 @@ func (mc *MetricsCollector) CalculateFields(metrics *jobtypes.Metrics, result *j
 				break
 			}
 			aliasFieldValue := aliasRow.Columns[aliasIndex]
-			if aliasFieldValue == constants.NULL_VALUE {
+			if aliasFieldValue == constants.NullValue {
 				fieldValueMap[aliasField] = nil
 				stringTypeFieldValueMap[aliasField] = nil
 				continue
@@ -112,7 +112,7 @@ func (mc *MetricsCollector) CalculateFields(metrics *jobtypes.Metrics, result *j
 
 			if program, exists := fieldExpressionMap[realField]; exists {
 				var context map[string]interface{}
-				if field.Type == constants.TYPE_STRING {
+				if field.Type == constants.TypeString {
 					context = stringTypeFieldValueMap
 				} else {
 					context = fieldValueMap
@@ -143,9 +143,9 @@ func (mc *MetricsCollector) CalculateFields(metrics *jobtypes.Metrics, result *j
 			}
 
 			// Process based on field type if value exists
-			if value != "" && value != constants.NULL_VALUE {
+			if value != "" && value != constants.NullValue {
 				switch field.Type {
-				case constants.TYPE_NUMBER:
+				case constants.TypeNumber:
 					// Extract numeric value and format
 					doubleAndUnit := replacer.ExtractDoubleAndUnitFromStr(value)
 					if doubleAndUnit != nil {
@@ -177,24 +177,24 @@ func (mc *MetricsCollector) CalculateFields(metrics *jobtypes.Metrics, result *j
 						}
 						value = formatNumber(numericValue)
 					} else {
-						value = constants.NULL_VALUE
+						value = constants.NullValue
 					}
 
-				case constants.TYPE_TIME:
+				case constants.TypeTime:
 					// TODO: Implement time parsing
 					// For now, keep original value
 				}
 			}
 
 			if value == "" {
-				value = constants.NULL_VALUE
+				value = constants.NullValue
 			}
 
 			realValueRow.Columns = append(realValueRow.Columns, value)
 
 			// Add the calculated field value to context maps for use in subsequent expressions
 			// This allows later expressions to reference earlier calculated fields
-			if value != constants.NULL_VALUE {
+			if value != constants.NullValue {
 				doubleAndUnit := replacer.ExtractDoubleAndUnitFromStr(value)
 				if doubleAndUnit != nil {
 					fieldValueMap[realField] = doubleAndUnit.Value
@@ -411,8 +411,8 @@ func (mc *MetricsCollector) parseUnitsFromStructArray(units []jobtypes.Unit, fie
 
 // parseCalculatesFromStringArray parses calculates from string array format
 func (mc *MetricsCollector) parseCalculatesFromStringArray(calculates []string,
-	fieldExpressionMap map[string]*vm.Program, fieldAliasMap map[string]string) {
-
+	fieldExpressionMap map[string]*vm.Program, fieldAliasMap map[string]string,
+) {
 	for _, calc := range calculates {
 		parts := splitCalculateString(calc)
 		if len(parts) != 2 {
@@ -444,8 +444,8 @@ func (mc *MetricsCollector) parseCalculatesFromStringArray(calculates []string,
 
 // parseCalculatesFromStructArray parses calculates from Calculate struct array
 func (mc *MetricsCollector) parseCalculatesFromStructArray(calculates []jobtypes.Calculate,
-	fieldExpressionMap map[string]*vm.Program, fieldAliasMap map[string]string) {
-
+	fieldExpressionMap map[string]*vm.Program, fieldAliasMap map[string]string,
+) {
 	for _, calc := range calculates {
 		if calc.Script != "" {
 			program, err := expr.Compile(calc.Script)

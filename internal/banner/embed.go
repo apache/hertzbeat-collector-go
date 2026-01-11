@@ -55,14 +55,12 @@ type bannerVars struct {
 }
 
 func New(srv *Config) *Runner {
-
 	return &Runner{
 		Server: srv.Server,
 	}
 }
 
 func (r *Runner) PrintBanner(appName, port string) error {
-
 	r.Logger = r.Logger.WithName("banner").WithValues("runner", "banner")
 
 	data, err := EmbedLogo.ReadFile("banner.txt")

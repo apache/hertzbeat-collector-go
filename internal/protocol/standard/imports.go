@@ -24,7 +24,6 @@ import (
 	_ "hertzbeat.apache.org/hertzbeat-collector-go/internal/protocol/basic/http"
 	_ "hertzbeat.apache.org/hertzbeat-collector-go/internal/protocol/basic/redis"
 	_ "hertzbeat.apache.org/hertzbeat-collector-go/internal/protocol/basic/ssh"
-
 	// extensions
 	_ "hertzbeat.apache.org/hertzbeat-collector-go/internal/protocol/extension/milvus"
 )

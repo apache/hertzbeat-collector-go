@@ -28,6 +28,8 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
+
+	bannerouter "hertzbeat.apache.org/hertzbeat-collector-go/internal/banner"
 	cfgloader "hertzbeat.apache.org/hertzbeat-collector-go/internal/config"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/job/collect"
 	jobserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/job/server"
@@ -37,13 +39,9 @@ import (
 	collectortypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/collector"
 	configtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/config"
 	collectorerr "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/err"
-
-	bannerouter "hertzbeat.apache.org/hertzbeat-collector-go/internal/banner"
 )
 
-var (
-	cfgPath string
-)
+var cfgPath string
 
 type Runner[I collectortypes.Info] interface {
 	Start(ctx context.Context) error
@@ -52,7 +50,6 @@ type Runner[I collectortypes.Info] interface {
 }
 
 func ServerCommand() *cobra.Command {
-
 	cmd := &cobra.Command{
 		Use:     "server",
 		Aliases: []string{"server", "srv", "s"},
@@ -67,7 +64,6 @@ func ServerCommand() *cobra.Command {
 }
 
 func getConfigByPath() (*configtypes.CollectorConfig, error) {
-
 	loader := cfgloader.New(cfgPath)
 	cfg, err := loader.LoadConfig()
 	if err != nil {
@@ -82,12 +78,10 @@ func getConfigByPath() (*configtypes.CollectorConfig, error) {
 }
 
 func serverByCfg(cfg *configtypes.CollectorConfig, logOut io.Writer) *clrserver.Server {
-
 	return clrserver.New(cfg, logOut)
 }
 
 func server(ctx context.Context, logOut io.Writer) error {
-
 	cfg, err := getConfigByPath()
 	if err != nil {
 		return err
@@ -110,7 +104,6 @@ func server(ctx context.Context, logOut io.Writer) error {
 }
 
 func startRunners(ctx context.Context, cfg *clrserver.Server) error {
-
 	// Create transport server first
 	transportRunner := transportserver.New(cfg)
 

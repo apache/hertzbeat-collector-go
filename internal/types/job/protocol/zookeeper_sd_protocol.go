@@ -23,9 +23,7 @@ import (
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
 )
 
-var (
-	ErrorInvalidPathPrefix = errors.New("invalid path prefix")
-)
+var ErrorInvalidPathPrefix = errors.New("invalid path prefix")
 
 type ZookeeperSdProtocol struct {
 	URL        string
@@ -35,7 +33,6 @@ type ZookeeperSdProtocol struct {
 }
 
 func NewZookeeperSdProtocol(url, pathPrefix string, logger logger.Logger) *ZookeeperSdProtocol {
-
 	return &ZookeeperSdProtocol{
 		URL:        url,
 		PathPrefix: pathPrefix,
@@ -44,7 +41,6 @@ func NewZookeeperSdProtocol(url, pathPrefix string, logger logger.Logger) *Zooke
 }
 
 func (zp *ZookeeperSdProtocol) IsInvalid() error {
-
 	if zp.URL == "" {
 		zp.logger.Error(ErrorInvalidURL, "zk sd protocol host is empty")
 		return ErrorInvalidURL

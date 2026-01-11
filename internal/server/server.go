@@ -38,7 +38,6 @@ type Server struct {
 }
 
 func New(cfg *config.CollectorConfig, logOut io.Writer) *Server {
-
 	return &Server{
 		Config: cfg,
 		Name:   HertzbeatCollectorGoName,
@@ -47,7 +46,6 @@ func New(cfg *config.CollectorConfig, logOut io.Writer) *Server {
 }
 
 func (s *Server) Validate() error {
-
 	// something validate
 
 	return nil

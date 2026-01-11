@@ -26,7 +26,7 @@ import (
 
 type Job struct {
 	App       string
-	MonitorId int64
+	MonitorID int64
 	Metadata  map[string]string
 }
 
@@ -76,7 +76,7 @@ func (c *HertzBeatMetricsCollector) RecordCollectMetrics(job *Job, durationMilli
 	labels := prometheus.Labels{
 		"status":         status,
 		"monitor_type":   job.App,
-		"monitor_id":     fmt.Sprintf("%d", job.MonitorId),
+		"monitor_id":     fmt.Sprintf("%d", job.MonitorID),
 		"monitor_name":   monitorName,
 		"monitor_target": monitorTarget,
 	}

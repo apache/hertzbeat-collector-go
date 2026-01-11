@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/proto"
+
 	pb "hertzbeat.apache.org/hertzbeat-collector-go/api"
 )
 
@@ -417,7 +418,9 @@ func (c *NettyClient) processReceivedMessage(msg *pb.Message) {
 			}()
 		} else {
 			// For non-request messages, process asynchronously
-			go fn(msg)
+			go func() {
+				_, _ = fn(msg)
+			}()
 		}
 	}
 }

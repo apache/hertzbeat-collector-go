@@ -29,7 +29,6 @@ type ConsulSdProtocol struct {
 }
 
 func NewConsulSdProtocol(host, port string, logger logger.Logger) *ConsulSdProtocol {
-
 	return &ConsulSdProtocol{
 		Host:   host,
 		Port:   port,
@@ -38,7 +37,6 @@ func NewConsulSdProtocol(host, port string, logger logger.Logger) *ConsulSdProto
 }
 
 func (cp *ConsulSdProtocol) IsInvalid() error {
-
 	if cp.Host == "" {
 		cp.logger.Error(ErrorInvalidHost, "consul sd protocol host is empty")
 		return ErrorInvalidHost

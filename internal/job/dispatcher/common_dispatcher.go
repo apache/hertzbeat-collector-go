@@ -22,7 +22,6 @@ package dispatcher
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/job/collect"
@@ -37,7 +36,6 @@ type CommonDispatcherImpl struct {
 	logger           logger.Logger
 	metricsCollector MetricsCollector
 	resultHandler    collect.ResultHandler
-	mu               sync.RWMutex
 }
 
 // MetricsCollector interface for metrics collection

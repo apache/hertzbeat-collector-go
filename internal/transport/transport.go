@@ -49,7 +49,6 @@ type Runner struct {
 }
 
 func New(cfg *clrserver.Server) *Runner {
-
 	return &Runner{
 		cfg: *cfg,
 		// init logger
@@ -63,7 +62,6 @@ func (r *Runner) SetJobScheduler(scheduler JobScheduler) {
 }
 
 func (r *Runner) Start(ctx context.Context) error {
-
 	r.tlog.Info("Starting transport client")
 
 	// 构建 server 地址
@@ -256,7 +254,6 @@ func (r *Runner) Info() collector.Info {
 }
 
 func (r *Runner) Close() error {
-
 	r.tlog.Info("transport close...")
 	if r.client != nil {
 		_ = r.client.Shutdown()
@@ -267,12 +264,10 @@ func (r *Runner) Close() error {
 
 // GetClient returns the transport client (for testing and advanced usage)
 func (r *Runner) GetClient() TransportClient {
-
 	return r.client
 }
 
 // IsConnected returns whether the client is connected and started
 func (r *Runner) IsConnected() bool {
-
 	return r.client != nil && r.client.IsStarted()
 }

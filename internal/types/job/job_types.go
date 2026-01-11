@@ -140,7 +140,7 @@ func (j *Job) ConstructPriorMetrics() {
 	// Sort by priority (ascending order)
 	sort.Slice(j.PriorMetrics, func(i, k int) bool {
 		// Get priority from the first metric in each set
-		var iPriority, kPriority int = math.MaxInt, math.MaxInt
+		iPriority, kPriority := math.MaxInt, math.MaxInt
 
 		if len(j.PriorMetrics[i]) > 0 && j.PriorMetrics[i][0] != nil {
 			iPriority = j.PriorMetrics[i][0].Priority

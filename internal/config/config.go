@@ -28,7 +28,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"gopkg.in/yaml.v3"
+	"sigs.k8s.io/yaml"
 
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	cfgtypes "hertzbeat.apache.org/hertzbeat-collector-go/internal/types/config"
@@ -50,7 +50,6 @@ type Loader struct {
 
 // New creates a new configuration loader
 func New(cfgPath string) *Loader {
-
 	return &Loader{
 		cfgPath: cfgPath,
 		logger:  logger.DefaultLogger(os.Stdout, loggertypes.LogLevelInfo).WithName("config-loader"),
@@ -285,7 +284,6 @@ func (l *Loader) WatchConfigAndReload(ctx context.Context) error {
 // when config file changes, it helps dynamically
 // adjust the log level for dynamic debugging
 func (l *Loader) reloadLogging(cfg *cfgtypes.CollectorConfig) error {
-
 	if cfg == nil {
 		return errors.New("config is nil")
 	}

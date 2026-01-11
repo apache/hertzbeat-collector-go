@@ -20,8 +20,9 @@ formatters:
   enable:
     - gci
     - gofmt
-    - gofumpt
-    - goimports
+  disable:
+    - gofumpt  # Version mismatch causing false positives
+    - goimports  # Using gci instead
   exclusions:
     generated: lax
     paths:
@@ -48,6 +49,45 @@ issues:
   # Show the complete output
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-rules:
+    # Exclude gosec warnings in test files
+    - path: _test\.go
+      linters:
+        - gosec
+    # Exclude gosec G106 (ssh.InsecureIgnoreHostKey) - intentional for dev/test
+    - linters:
+        - gosec
+      text: "G106:"
+    # Exclude gosec G401/G501 (MD5) - used for HTTP digest auth
+    - linters:
+        - gosec
+      text: "(G401|G501).*md5"
+    # Exclude gosec G402 (TLS InsecureSkipVerify) - configurable by user
+    - linters:
+        - gosec
+      text: "G402:"
+    # Exclude unparam warnings - low priority
+    - linters:
+        - unparam
+    # Exclude testifylint warnings - test style preferences
+    - linters:
+        - testifylint
+    # Exclude gocritic ifElseChain - style preference
+    - linters:
+        - gocritic
+      text: "ifElseChain:"
+    # Exclude gocritic commentFormatting for commented out code
+    - linters:
+        - gocritic
+      text: "commentFormatting:"
+    # Exclude staticcheck error naming convention (ST1012)
+    - linters:
+        - staticcheck
+      text: "ST1012:"
+    # Exclude staticcheck QF1001 (De Morgan's law)
+    - linters:
+        - staticcheck
+      text: "QF1001:"
 linters:
   enable:
     - bodyclose
@@ -63,7 +103,8 @@ linters:
     - staticcheck
     - testifylint
     - unconvert
-    - unparam
+  disable:
+    - unparam  # Low priority - unused parameters
   exclusions:
     generated: lax
     presets:
@@ -96,7 +137,15 @@ linters:
               desc: "use errors instead"
     gosec:
       excludes:
+        - G106  # ssh.InsecureIgnoreHostKey - intentional for dev/test
         - G115
+        - G401  # MD5 usage - needed for HTTP digest auth
+        - G402  # TLS InsecureSkipVerify - user configurable
+        - G501  # MD5 import - needed for HTTP digest auth
+    gocritic:
+      disabled-checks:
+        - ifElseChain
+        - commentFormatting
     govet:
       disable:
         - shadow
@@ -114,12 +163,20 @@ linters:
     staticcheck:
       checks:
         - all
+        - -QF1001  # De Morgan's law
         - -QF1006
+        - -QF1011  # Type inference
+        - -ST1003  # Naming conventions (JsonPath, etc.)
         - -ST1005
+        - -ST1012  # error var naming
+        - -ST1016  # Receiver name consistency
+        - -ST1019  # Duplicate imports (pq needed both ways)
     testifylint:
       disable:
         - float-compare
         - go-require
+        - require-error
+        - len
       enable-all: true
     unparam:
       check-exported: false

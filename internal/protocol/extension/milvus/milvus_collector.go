@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
+
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/job/collect/strategy"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job"
@@ -111,7 +112,7 @@ func (c *MilvusCollector) Collect(metrics *job.Metrics) *job.CollectRepMetricsDa
 
 	for i, field := range metrics.AliasFields {
 		switch strings.ToLower(field) {
-		case strings.ToLower(constants.RESPONSE_TIME):
+		case strings.ToLower(constants.ResponseTime):
 			row.Columns[i] = strconv.FormatInt(responseTime, 10)
 		case "version":
 			row.Columns[i] = version
@@ -120,7 +121,7 @@ func (c *MilvusCollector) Collect(metrics *job.Metrics) *job.CollectRepMetricsDa
 		case "port":
 			row.Columns[i] = milvusConfig.Port
 		default:
-			row.Columns[i] = constants.NULL_VALUE
+			row.Columns[i] = constants.NullValue
 		}
 	}
 

@@ -28,6 +28,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	clrserver "hertzbeat.apache.org/hertzbeat-collector-go/internal/server"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/types/collector"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/util/logger"
@@ -89,13 +90,11 @@ type Runner struct {
 
 // New creates a new metrics runner
 func New(cfg *clrserver.Server) *Runner {
-
 	return &Runner{cfg: cfg}
 }
 
 // Start starts the metrics server
 func (r *Runner) Start(ctx context.Context) error {
-
 	// init logger
 	mlog := r.initLogs()
 
@@ -130,7 +129,6 @@ func (r *Runner) Start(ctx context.Context) error {
 
 // Info returns the runner info
 func (r *Runner) Info() collector.Info {
-
 	return collector.Info{
 		Name: "metrics-server",
 	}
@@ -138,7 +136,6 @@ func (r *Runner) Info() collector.Info {
 
 // Close closes the metrics server
 func (r *Runner) Close() error {
-
 	if r.server != nil {
 		r.initLogs().Info("Shutting down metrics server")
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -149,6 +146,5 @@ func (r *Runner) Close() error {
 }
 
 func (r *Runner) initLogs() logger.Logger {
-
 	return r.cfg.Logger.WithName("metrics")
 }

@@ -297,7 +297,51 @@ func (j *Job) Clone() *Job {
 		return nil
 	}
 
-	clone := *j
+	clone := &Job{
+		ID:              j.ID,
+		TenantID:        j.TenantID,
+		MonitorID:       j.MonitorID,
+		Hide:            j.Hide,
+		Category:        j.Category,
+		App:             j.App,
+		Name:            j.Name,
+		Help:            j.Help,
+		HelpLink:        j.HelpLink,
+		Timestamp:       j.Timestamp,
+		DefaultInterval: j.DefaultInterval,
+		IsCyclic:        j.IsCyclic,
+	}
+
+	// Deep copy slices
+	if j.Intervals != nil {
+		clone.Intervals = make([]int64, len(j.Intervals))
+		copy(clone.Intervals, j.Intervals)
+	}
+
+	if j.Params != nil {
+		clone.Params = make([]ParamDefine, len(j.Params))
+		copy(clone.Params, j.Params)
+	}
+
+	if j.Metrics != nil {
+		clone.Metrics = make([]Metrics, len(j.Metrics))
+		copy(clone.Metrics, j.Metrics)
+	}
+
+	if j.Configmap != nil {
+		clone.Configmap = make([]Configmap, len(j.Configmap))
+		copy(clone.Configmap, j.Configmap)
+	}
+
+	if j.PriorMetrics != nil {
+		clone.PriorMetrics = make([][]*Metrics, len(j.PriorMetrics))
+		for i, metrics := range j.PriorMetrics {
+			if metrics != nil {
+				clone.PriorMetrics[i] = make([]*Metrics, len(metrics))
+				copy(clone.PriorMetrics[i], metrics)
+			}
+		}
+	}
 
 	// Deep copy maps
 	if j.Metadata != nil {
@@ -386,7 +430,7 @@ func (j *Job) Clone() *Job {
 		copy(clone.Configmap, j.Configmap)
 	}
 
-	return &clone
+	return clone
 }
 
 // CollectRepMetricsData represents the collected metrics data response.

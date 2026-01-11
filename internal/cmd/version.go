@@ -26,7 +26,6 @@ import (
 )
 
 func VersionCommand() *cobra.Command {
-
 	var output string
 
 	cmd := &cobra.Command{

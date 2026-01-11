@@ -51,7 +51,6 @@ const (
 )
 
 func DefaultHertzbeatLogging() *HertzBeatLogging {
-
 	return &HertzBeatLogging{
 		Level: map[HertzbeatLogComponent]LogLevel{
 			LogComponentHertzbeatDefault: LogLevelInfo,
@@ -60,13 +59,11 @@ func DefaultHertzbeatLogging() *HertzBeatLogging {
 }
 
 func (logging *HertzBeatLogging) DefaultHertzBeatLoggingLevel(level LogLevel) LogLevel {
-
 	if level != "" {
 		return level
 	}
 
 	if logging.Level[LogComponentHertzbeatDefault] != "" {
-
 		return logging.Level[LogComponentHertzbeatDefault]
 	}
 
@@ -74,9 +71,7 @@ func (logging *HertzBeatLogging) DefaultHertzBeatLoggingLevel(level LogLevel) Lo
 }
 
 func (logging *HertzBeatLogging) SetHertzBeatLoggingDefaults() {
-
 	if logging != nil && logging.Level != nil && logging.Level[LogComponentHertzbeatDefault] == "" {
-
 		logging.Level[LogComponentHertzbeatDefault] = LogLevelInfo
 	}
 }

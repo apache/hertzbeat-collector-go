@@ -37,7 +37,6 @@ type Logger struct {
 }
 
 func NewLogger(w io.Writer, logging *logger.HertzBeatLogging) Logger {
-
 	logger := initZapLogger(w, logging, logging.Level[logger.LogComponentHertzbeatDefault])
 
 	return Logger{
@@ -49,7 +48,6 @@ func NewLogger(w io.Writer, logging *logger.HertzBeatLogging) Logger {
 }
 
 func FileLogger(file, name string, level logger.LogLevel) Logger {
-
 	writer, err := os.OpenFile(file, os.O_WRONLY, 0o666)
 	if err != nil {
 		panic(err)
@@ -67,7 +65,6 @@ func FileLogger(file, name string, level logger.LogLevel) Logger {
 }
 
 func DefaultLogger(out io.Writer, level logger.LogLevel) Logger {
-
 	logging := logger.DefaultHertzbeatLogging()
 	logger := initZapLogger(out, logging, level)
 
@@ -85,7 +82,6 @@ func DefaultLogger(out io.Writer, level logger.LogLevel) Logger {
 // contain only letters, digits, and hyphens (see the package documentation for
 // more information).
 func (l Logger) WithName(name string) Logger {
-
 	logLevel := l.logging.Level[logger.HertzbeatLogComponent(name)]
 	logger := initZapLogger(l.out, l.logging, logLevel)
 
@@ -100,7 +96,6 @@ func (l Logger) WithName(name string) Logger {
 // WithValues returns a new Logger instance with additional key/value pairs.
 // See Info for documentation on how key/value pairs work.
 func (l Logger) WithValues(keysAndValues ...interface{}) Logger {
-
 	l.Logger = l.Logger.WithValues(keysAndValues...)
 	return l
 }
@@ -124,12 +119,10 @@ func (l Logger) WithValues(keysAndValues ...interface{}) Logger {
 //	Infof(string, ...any)  Printf-style logger
 //	Infoln(...any)         Println-style logger
 func (l Logger) Sugar() *zap.SugaredLogger {
-
 	return l.sugaredLogger
 }
 
 func initZapLogger(w io.Writer, logging *logger.HertzBeatLogging, level logger.LogLevel) *zap.Logger {
-
 	parseLevel, _ := zapcore.ParseLevel(string(logging.DefaultHertzBeatLoggingLevel(level)))
 	core := zapcore.NewCore(zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()), zapcore.AddSync(w), zap.NewAtomicLevelAt(parseLevel))
 

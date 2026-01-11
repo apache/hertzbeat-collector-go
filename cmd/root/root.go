@@ -26,7 +26,6 @@ import (
 )
 
 func GetRootCommand() *cobra.Command {
-
 	c := &cobra.Command{
 		Use:   "hertzbeat-collector-go",
 		Short: "HertzBeat Collector Go",

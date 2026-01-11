@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/expfmt"
+
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/constants"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/job/collect/strategy"
 	"hertzbeat.apache.org/hertzbeat-collector-go/internal/types/job"
@@ -52,7 +53,7 @@ const (
 
 	// Parse Types
 	ParseTypeDefault    = "default"
-	ParseTypeJsonPath   = "jsonPath"
+	ParseTypeJSONPath   = "jsonPath"
 	ParseTypePrometheus = "prometheus"
 	ParseTypeWebsite    = "website"
 	ParseTypeHeader     = "header"
@@ -156,7 +157,7 @@ func (hc *HTTPCollector) Collect(metrics *job.Metrics) *job.CollectRepMetricsDat
 		strings.EqualFold(httpConfig.Authorization.Type, AuthTypeDigest) {
 
 		// Close the first response body
-		io.Copy(io.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 
 		authHeader := resp.Header.Get("WWW-Authenticate")
@@ -200,7 +201,7 @@ func (hc *HTTPCollector) Collect(metrics *job.Metrics) *job.CollectRepMetricsDat
 		responseData, err = hc.parseWebsite(bodyBytes, resp.StatusCode, responseTime, metrics, httpConfig)
 	case ParseTypeHeader:
 		responseData, err = hc.parseHeader(resp.Header, metrics)
-	case ParseTypeJsonPath, ParseTypeDefault:
+	case ParseTypeJSONPath, ParseTypeDefault:
 		responseData, err = hc.parseJsonPath(bodyBytes, metrics, responseTime, httpConfig)
 	default:
 		responseData, err = hc.parseJsonPath(bodyBytes, metrics, responseTime, httpConfig)
@@ -302,7 +303,7 @@ func (hc *HTTPCollector) md5Hex(s string) string {
 
 func (hc *HTTPCollector) generateCnonce() string {
 	b := make([]byte, 8)
-	io.ReadFull(rand.Reader, b)
+	_, _ = io.ReadFull(rand.Reader, b)
 	return hex.EncodeToString(b)
 }
 
@@ -369,7 +370,7 @@ func (hc *HTTPCollector) parsePrometheus(body []byte, metrics *job.Metrics) (*jo
 			}
 			hasValue := false
 			for i, field := range metrics.AliasFields {
-				if field == constants.NULL_VALUE {
+				if field == constants.NullValue {
 					continue
 				}
 				if field == "value" || field == "prom_value" {
@@ -386,7 +387,7 @@ func (hc *HTTPCollector) parsePrometheus(body []byte, metrics *job.Metrics) (*jo
 						row.Columns[i] = val
 						hasValue = true
 					} else {
-						row.Columns[i] = constants.NULL_VALUE
+						row.Columns[i] = constants.NullValue
 					}
 				}
 			}
@@ -411,12 +412,12 @@ func (hc *HTTPCollector) parseWebsite(body []byte, statusCode int, responseTime 
 		switch strings.ToLower(field) {
 		case strings.ToLower(constants.StatusCode):
 			row.Columns[i] = strconv.Itoa(statusCode)
-		case strings.ToLower(constants.RESPONSE_TIME):
+		case strings.ToLower(constants.ResponseTime):
 			row.Columns[i] = strconv.FormatInt(responseTime, 10)
 		case "keyword":
 			row.Columns[i] = strconv.Itoa(keywordCount)
 		default:
-			row.Columns[i] = constants.NULL_VALUE
+			row.Columns[i] = constants.NullValue
 		}
 	}
 	response.Values = append(response.Values, row)
@@ -431,7 +432,7 @@ func (hc *HTTPCollector) parseHeader(header http.Header, metrics *job.Metrics) (
 		if val != "" {
 			row.Columns[i] = val
 		} else {
-			row.Columns[i] = constants.NULL_VALUE
+			row.Columns[i] = constants.NullValue
 		}
 	}
 	response.Values = append(response.Values, row)
@@ -477,14 +478,16 @@ func (hc *HTTPCollector) navigateJson(data interface{}, path string) interface{}
 		if current == nil {
 			return nil
 		}
-		key := part
 		idx := -1
+		key := ""
 		if i := strings.Index(part, "["); i > -1 && strings.HasSuffix(part, "]") {
 			key = part[:i]
 			idxStr := part[i+1 : len(part)-1]
 			if val, err := strconv.Atoi(idxStr); err == nil {
 				idx = val
 			}
+		} else {
+			key = part
 		}
 		if key != "" {
 			if m, ok := current.(map[string]interface{}); ok {
@@ -516,8 +519,8 @@ func (hc *HTTPCollector) extractRow(item interface{}, fields []string) job.Value
 	row := job.ValueRow{Columns: make([]string, len(fields))}
 	m, isMap := item.(map[string]interface{})
 	for i, field := range fields {
-		if strings.EqualFold(field, constants.RESPONSE_TIME) || strings.EqualFold(field, constants.StatusCode) {
-			row.Columns[i] = constants.NULL_VALUE
+		if strings.EqualFold(field, constants.ResponseTime) || strings.EqualFold(field, constants.StatusCode) {
+			row.Columns[i] = constants.NullValue
 			continue
 		}
 		var val interface{}
@@ -531,7 +534,7 @@ func (hc *HTTPCollector) extractRow(item interface{}, fields []string) job.Value
 		if val != nil {
 			row.Columns[i] = fmt.Sprintf("%v", val)
 		} else {
-			row.Columns[i] = constants.NULL_VALUE
+			row.Columns[i] = constants.NullValue
 		}
 	}
 	return row
@@ -544,19 +547,19 @@ func (hc *HTTPCollector) fillCommonFields(resp *job.CollectRepMetricsData, field
 	if len(resp.Fields) == 0 {
 		resp.Fields = make([]job.Field, len(fields))
 		for i, f := range fields {
-			resp.Fields[i] = job.Field{Field: f, Type: constants.TYPE_STRING}
+			resp.Fields[i] = job.Field{Field: f, Type: constants.TypeString}
 		}
 	}
 	if len(resp.Values) == 0 {
 		row := job.ValueRow{Columns: make([]string, len(fields))}
 		for k := range row.Columns {
-			row.Columns[k] = constants.NULL_VALUE
+			row.Columns[k] = constants.NullValue
 		}
 		resp.Values = append(resp.Values, row)
 	}
 	for i := range resp.Values {
 		for j, field := range fields {
-			if strings.EqualFold(field, constants.RESPONSE_TIME) {
+			if strings.EqualFold(field, constants.ResponseTime) {
 				resp.Values[i].Columns[j] = strconv.FormatInt(responseTime, 10)
 			}
 			if strings.EqualFold(field, constants.StatusCode) {
