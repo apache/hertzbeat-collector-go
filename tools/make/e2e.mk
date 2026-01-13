@@ -15,16 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-_run:
-	@$(MAKE) --warn-undefined-variables \
-		-f tools/make/common.mk \
-		-f tools/make/golang.mk \
-		-f tools/make/linter.mk \
-		-f tools/make/tools.mk \
-		-f tools/make/image.mk \
-		-f tools/make/e2e.mk \
-		$(MAKECMDGOALS)
+# ======== e2e.mk ========
+# = E2E Testing Framework =
+# ======== e2e.mk ========
 
-.PHONY: _run
-
-$(if $(MAKECMDGOALS),$(MAKECMDGOALS): %: _run)
+##@ E2E Testing
